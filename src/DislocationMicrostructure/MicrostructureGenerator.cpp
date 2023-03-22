@@ -16,7 +16,9 @@
 #include <MicrostructureGenerator.h>
 #include <PeriodicDipoleGenerator.h>
 #include <PeriodicLoopGenerator.h>
-#include <InclusionsGenerator.h>
+#include <PrismaticLoopGenerator.h>
+#include <SphericalInclusionsGenerator.h>
+#include <PolyhedronInclusionsGenerator.h>
 #include <IrradiationDefectsGenerator.h>
 
 #include <VTKGenerator.h>
@@ -68,9 +70,17 @@ namespace model
             {
                 success=this->emplace(tag,new PeriodicLoopGenerator(microstructureFileName)).second;
             }
-            else if(microstructureType=="Inclusions")
+            else if(microstructureType=="PrismaticLoop")
             {
-                success=this->emplace(tag,new InclusionsGenerator(microstructureFileName)).second;
+                success=this->emplace(tag,new PrismaticLoopGenerator(microstructureFileName)).second;
+            }
+            else if(microstructureType=="SphericalInclusions")
+            {
+                success=this->emplace(tag,new SphericalInclusionsGenerator(microstructureFileName)).second;
+            }
+            else if(microstructureType=="PolyhedronInclusions")
+            {
+                success=this->emplace(tag,new PolyhedronInclusionsGenerator(microstructureFileName)).second;
             }
             else if(microstructureType=="Irradiation")
             {
@@ -107,24 +117,7 @@ namespace model
             }
         }
         
-        // Call individual generators
-        //            addStraightDislocations();
-        //            addFrankReadSources();
-        //            addSingleArmDislocations();
-        //            addPrismaticLoops();
-        //            addIndividualStraightDislocations();
-        //            addFrankLoops();
-        //            addNonPlanarLoops();
-        //            // addPeriodicLoops();
-        //            addStatisticallyHomegeneousPeriodicLoops();
-        //    addIndividualPeriodicStraighDislocation();
-        //            addStatisticallyHomegeneousPlanarDipolarLoops();
-        //            addPeriodicJunctionLoops();
-        //            addIrradiationLoops();
-        //            addStackingFaultTetrahedra();
-        //            addEshelbyInclusions();
-        writeConfigFiles(0);
-        
+        writeConfigFiles(0);        
     }
 
     const DDconfigIO<3>& MicrostructureGenerator::config() const
@@ -210,10 +203,37 @@ namespace model
 
     size_t MicrostructureGenerator::insertInclusion(const VectorDimD& pos,const double& R, const Eigen::Matrix<double,dim,dim>& eT, const double& vrc,const int&type)
     {
-        const size_t inclusionID(configIO.eshelbyInclusions().size());
-        configIO.eshelbyInclusions().emplace_back(inclusionID,pos,R,eT,vrc,type);
+        const size_t inclusionID(configIO.sphericalInclusions().size()+configIO.polyhedronInclusions().size());
+        configIO.sphericalInclusions().emplace_back(inclusionID,pos,R,eT,vrc,type);
         return inclusionID;
     }
+
+size_t MicrostructureGenerator::insertInclusion(const std::vector<VectorDimD>& polyNodes,const std::map<size_t,std::vector<size_t>>& faceMap, const Eigen::Matrix<double,dim,dim>& eT, const double& vrc,const int&type)
+{
+    const size_t inclusionID(configIO.sphericalInclusions().size()+configIO.polyhedronInclusions().size());
+    configIO.polyhedronInclusions().emplace_back(inclusionID,eT,vrc,type);
+    const size_t startNodeID(configIO.polyhedronInclusionNodes().size());
+//    const size_t startNodeID(0);
+    for(size_t k=0;k<polyNodes.size();++k)
+    {
+//        configIO.polyhedronInclusionNodes().emplace_back(inclusionID,startNodeID+k,polyNodes[k]);
+        configIO.polyhedronInclusionNodes().emplace_back(startNodeID+k,polyNodes[k]);
+
+    }
+    for(const auto& pair : faceMap)
+    {
+        const size_t& faceID(pair.first);
+        for(size_t k=0;k<pair.second.size();++k)
+        {
+            const size_t k1(k<pair.second.size()-1? k+1 : 0);
+            const size_t sourceID(startNodeID + pair.second[k]);
+            const size_t   sinkID(startNodeID + pair.second[k1]);
+            configIO.polyhedronInclusionEdges().emplace_back(inclusionID,faceID,sourceID,sinkID);
+        }
+    }
+    
+    return inclusionID;
+}
 
 
 

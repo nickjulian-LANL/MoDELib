@@ -48,6 +48,7 @@ namespace model
 
         const std::shared_ptr<GlidePlaneType> glidePlane;
         const std::shared_ptr<PeriodicGlidePlaneType> periodicGlidePlane;
+        DislocationLoopPatches<_dim> _patches;
         const GrainType& grain;
         const int loopType;
 
@@ -62,7 +63,7 @@ namespace model
         VectorDim _rightHandedUnitNormal;
         ReciprocalLatticeDirectionType _rightHandedNormal;
         std::shared_ptr<SlipSystem> _slipSystem;
-        std::map<std::shared_ptr<PeriodicPlanePatch<_dim>>,std::vector<Eigen::Matrix<double,_dim-1,1>>> _patches;
+//        std::map<std::shared_ptr<PeriodicPlanePatch<_dim>>,std::vector<Eigen::Matrix<double,_dim-1,1>>> _patches;
         
     public:
         
@@ -79,7 +80,7 @@ namespace model
         const double& slippedAreaRate() const;
         const VectorDim& rightHandedUnitNormal() const;
         const ReciprocalLatticeDirectionType& rightHandedNormal() const;
-        std::tuple<double,double,double> loopLength() const;
+        std::tuple<double,double,double,double> loopLength() const;
         std::shared_ptr<SlipSystem> searchSlipSystem() const;
         void updateSlipSystem();
         void updateGeometry();
@@ -96,6 +97,24 @@ namespace model
         static void initFromFile(const std::string&);
         static double planarSolidAngle(const VectorDim& x,const VectorDim& planePoint,const VectorDim& rhN,const std::vector<std::pair<VectorDim,VectorDim>>& polygonSegments);
         template <typename T> static int sgn(const T& val);
+        
+//        void printPeriodicLoop() const
+//        {
+//            std::cout<<"Loop "<<this->tag()<<" patches:"<<std::endl;
+//            if(periodicGlidePlane)
+//            {
+//                for(const auto& weakPatch : periodicGlidePlane->patches())
+//                {
+//                    const auto patch(weakPatch.second.lock());
+//                    for(const auto& edge : patch->edges())
+//                    {
+//                        std::cout<<patch->sID<<" "<<edge->edgeID<<" "<<edge->source->transpose()<<std::endl;
+//                    }
+//                }
+//            }
+//            
+//            
+//        }
         
    };
     

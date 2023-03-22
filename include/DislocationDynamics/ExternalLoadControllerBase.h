@@ -49,6 +49,7 @@ namespace model
         /**************************************************************************/
         virtual MatrixDim stress(const VectorDim&) const = 0;
         virtual MatrixDim strain(const VectorDim&) const = 0;
+
         
         /*************************************************************************/
         virtual void update(const long int& runID) = 0;

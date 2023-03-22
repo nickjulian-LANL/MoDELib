@@ -33,7 +33,7 @@ switch lattice
         material='W';
     case 'fcc'
         A=1/sqrt(2)*[0 1 1;1 0 1;1 1 0]; % fcc
-        material='AlMg15';
+%        material='AlMg15';
 %        material='Al';
         material='Ni';
     otherwise
