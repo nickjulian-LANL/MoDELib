@@ -29,9 +29,9 @@ namespace model
         
         enum SimulationType{FINITE_NO_FEM=0,FINITE_FEM=1,PERIODIC_IMAGES=2,PERIODIC_FEM=3};
 
-        const DDtraitsIO traitsIO;
+        DDtraitsIO traitsIO;
 //        const std::string simulationFolder;
-        const int simulationType;
+        int simulationType;
         const bool useDislocations;
         const bool useCracks;
 

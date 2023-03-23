@@ -6,6 +6,7 @@ option(USE_NOISE_GENERATOR "Use fftw to generate the noise" ON)
 
 set(MoDELibRootDir "${CMAKE_CURRENT_SOURCE_DIR}/../..")
 set(DDPY_INCLUDE_Dir "${CMAKE_CURRENT_SOURCE_DIR}")
+set(DDPYRootDir "${CMAKE_CURRENT_SOURCE_DIR}")
 
 #set(CMAKE_BUILD_TYPE Release)
 set(CMAKE_BUILD_TYPE Debug) # this variable seems ineffective, so set -g manually
@@ -74,6 +75,7 @@ message(STATUS "DDPY_LINK_LIBRARIES_LIST ${DDPY_LINK_LIBRARIES_LIST}")
 target_link_libraries(${DDPY} PUBLIC ${DDPY_LINK_LIBRARIES_LIST})
 
 target_include_directories(${DDPY} PUBLIC ${DDPY_INCLUDE_Dir})
+target_include_directories(${DDPY} PUBLIC ${DDPY_INCLUDE_Dir}/MicrostructureGeneratorInMem)
 target_include_directories(${DDPY} PUBLIC Eigen3::Eigen)
 target_include_directories(${DDPY} PUBLIC ${MoDELibRootDir}/include/Utilities/)
 target_include_directories(${DDPY} PUBLIC ${MoDELibRootDir}/include/IO/)
@@ -99,6 +101,7 @@ target_include_directories(${DDPY} PUBLIC ${MoDELibRootDir}/include/DislocationD
 target_include_directories(${DDPY} PUBLIC ${MoDELibRootDir}/include/DislocationDynamics/ElasticFields/)
 #target_include_directories(${DDPY} PUBLIC ${MoDELibRootDir}/include/vtk/)
 
+add_subdirectory(${DDPYRootDir}/MicrostructureGeneratorInMem MicrostructureGeneratorInMem)
 add_subdirectory(${MoDELibRootDir}/src/Geometry Geometry)
 add_subdirectory(${MoDELibRootDir}/src/Lattices Lattices)
 add_subdirectory(${MoDELibRootDir}/src/Mesh Mesh)

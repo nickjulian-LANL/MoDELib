@@ -32,33 +32,18 @@ namespace model
         
         static constexpr int dim=DefectiveCrystalType::dim;
         static constexpr int voigtSize=dim*(dim+1)/2;
+        Eigen::Matrix<size_t,voigtSize,2>     voigtorder;
         typedef Eigen::Matrix<double,dim,dim> MatrixDim;
         typedef Eigen::Matrix<double,dim,1>   VectorDim;
         
         const DefectiveCrystalType& DN;
         
-        MatrixDim ExternalStress;
-        
-        //External stress control parameter
-        MatrixDim ExternalStress0;
-        MatrixDim ExternalStressRate;
-        
-        MatrixDim ExternalStrain;
-        //External strain control parameter
-        MatrixDim ExternalStrain0;
-        MatrixDim ExternalStrainRate;
-        MatrixDim plasticStrain;
-        //finite machine stiffness effect
-        Eigen::Matrix<double,1,voigtSize> MachineStiffnessRatio;    //0 is stress control; infinity is pure strain control.
-        Eigen::Matrix<size_t,voigtSize,2>     voigtorder;
-        Eigen::Matrix<double,voigtSize,voigtSize> stressmultimachinestiffness;
-        Eigen::Matrix<double,voigtSize,voigtSize> strainmultimachinestiffness;
         double last_update_time;
-        double lambda;  //unit is mu, lambda=2*v/(1-2*v)
-        double nu_use;
         const bool enable;
         const int relaxSteps;
         
+        MatrixDim ExternalStress0;
+        MatrixDim ExternalStrain0;
         
     public:
         /**************************************************************************/
@@ -66,23 +51,13 @@ namespace model
         UniformExternalLoadController(const DislocationNetworkType& _DN,const long int& runID) :
         //        /* init list */ this->inputFileName("./externalLoadControl/UniformExternalLoadController.txt")
         /* init list */ ExternalLoadControllerBase<DefectiveCrystalType::dim>(_DN.simulationParameters.traitsIO.simulationFolder+"/inputFiles/uniformExternalLoadController.txt")
-        /* init list */,DN(_DN)
-        /* init list */,ExternalStress(MatrixDim::Zero())
-        /* init list */,ExternalStress0(TextFileParser(this->inputFileName).readMatrix<double>("ExternalStress0",dim,dim,true))
-        /* init list */,ExternalStressRate(TextFileParser(this->inputFileName).readMatrix<double>("ExternalStressRate",dim,dim,true))
-        /* init list */,ExternalStrain(MatrixDim::Zero())
-        /* init list */,ExternalStrain0(TextFileParser(this->inputFileName).readMatrix<double>("ExternalStrain0",dim,dim,true))
-        /* init list */,ExternalStrainRate(TextFileParser(this->inputFileName).readMatrix<double>("ExternalStrainRate",dim,dim,true))
-        /* init list */,plasticStrain(MatrixDim::Zero())
-        /* init list */,MachineStiffnessRatio(TextFileParser(this->inputFileName).readMatrix<double>("MachineStiffnessRatio",1,voigtSize,true))
         /* init list */,voigtorder(Eigen::Matrix<size_t,voigtSize,2>::Zero())
-        /* init list */,stressmultimachinestiffness(Eigen::Matrix<double,voigtSize,voigtSize>::Zero())
-        /* init list */,strainmultimachinestiffness(Eigen::Matrix<double,voigtSize,voigtSize>::Zero())
+        /* init list */,DN(_DN)
         /* init list */,last_update_time(0.0)
-        /* init list */,lambda(1.0)
-        /* init list */,nu_use(0.12)
         /* init list */,enable(TextFileParser(this->inputFileName).readScalar<int>("enable",true))
         /* init list */,relaxSteps(TextFileParser(this->inputFileName).readScalar<int>("relaxSteps",true))
+        /* init list */,ExternalStress0(TextFileParser(this->inputFileName).readMatrix<double>("ExternalStress0",dim,dim,true))
+        /* init list */,ExternalStrain0(TextFileParser(this->inputFileName).readMatrix<double>("ExternalStrain0",dim,dim,true))
         {
             //            const long int runID=DN.runningID();
             //            const unsigned int userOutputColumn=DN.userOutputColumn();
@@ -90,19 +65,17 @@ namespace model
             
             
             
-            double nu=DN.poly.nu;
-            std::cout<<" nu="<<nu<<std::endl;
-            nu_use=nu/(1.0+nu)/2.0;
-            lambda=2.0*nu/(1.0-2.0*nu);
-            
             //            model::EigenDataReader EDR;
             TextFileParser parser(this->inputFileName);
             assert((ExternalStress0-ExternalStress0.transpose()).norm()<DBL_EPSILON && "ExternalStress0 is not symmetric.");
-            assert((ExternalStressRate-ExternalStressRate.transpose()).norm()<DBL_EPSILON && "ExternalStressRate is not symmetric.");
             assert((ExternalStrain0-ExternalStrain0.transpose()).norm()<DBL_EPSILON && "ExternalStrain0 is not symmetric.");
-            assert((ExternalStrainRate-ExternalStrainRate.transpose()).norm()<DBL_EPSILON && "ExternalStrainRate is not symmetric.");
             
             
+            double nu=DN.poly.nu;
+            std::cout<<" nu="<<nu<<std::endl;
+            this->nu_use=nu/(1.0+nu)/2.0;
+            this->lambda=2.0*nu/(1.0-2.0*nu);
+
             // initilize the default voigt order
             size_t vnum=0;
             for (size_t i=0;i<dim;i++)
@@ -116,16 +89,19 @@ namespace model
             std::cout<<" voigtorder="<<voigtorder<<std::endl;
             
             // initilize the default voigt machinestiffness
-            MachineStiffnessRatio.block(0,0,1,dim)=MachineStiffnessRatio.block(0,0,1,dim)*(2+lambda); // using strategy 2 in test.m file  alpha*diag(C)  (first three)*(2*mu+lambda)  (first three)*mu
+            this->MachineStiffnessRatio.block(0,0,1,dim)=this->MachineStiffnessRatio.block(0,0,1,dim)*(2+this->lambda); // using strategy 2 in test.m file  alpha*diag(C)  (first three)*(2*mu+lambda)  (first three)*mu
             Eigen::Matrix<double,voigtSize,voigtSize>  Cinv=Eigen::Matrix<double,voigtSize,voigtSize>::Identity();
-            Cinv.block(0,0,dim,dim)<<nu_use/nu, -nu_use,       -nu_use,
-            -nu_use,   nu_use/nu,     -nu_use,
-            -nu_use,   -nu_use,       nu_use/nu;
-            Eigen::Matrix<double,voigtSize,voigtSize>  machinestiffness=MachineStiffnessRatio.asDiagonal();;
+            Cinv.block(0,0,dim,dim)<<(this->nu_use)/nu, -(this->nu_use),       -(this->nu_use),
+            -(this->nu_use),   (this->nu_use)/nu,     -(this->nu_use),
+            -(this->nu_use),   -(this->nu_use),       (this->nu_use)/nu;
+
+            Eigen::Matrix<double,voigtSize,voigtSize>  machinestiffness=this->MachineStiffnessRatio.asDiagonal();;
             //stressmultimachinestiffness=(Eigen::Matrix<double,voigtSize,voigtSize>::Identity()+machinestiffness).inverse();
             //strainmultimachinestiffness=(Eigen::Matrix<double,voigtSize,voigtSize>::Identity()+machinestiffness).inverse()*machinestiffness;
-            stressmultimachinestiffness=(Eigen::Matrix<double,voigtSize,voigtSize>::Identity()+machinestiffness*Cinv).inverse();
-            strainmultimachinestiffness=(Eigen::Matrix<double,voigtSize,voigtSize>::Identity()+machinestiffness*Cinv).inverse()*machinestiffness;
+            this->stressmultimachinestiffness=(Eigen::Matrix<double,voigtSize,voigtSize>::Identity()+machinestiffness*Cinv).inverse();
+            this->strainmultimachinestiffness=(Eigen::Matrix<double,voigtSize,voigtSize>::Identity()+machinestiffness*Cinv).inverse()*machinestiffness;
+            std::cout<<" stressmultimachinestiffness="<<this->stressmultimachinestiffness<<std::endl;
+            std::cout<<" strainmultimachinestiffness="<<this->strainmultimachinestiffness<<std::endl;
             /*    for (size_t i=0;i<voigtSize;i++)
              {
              double alpha=MachineStiffnessRatio.row(i)[0];
@@ -140,8 +116,6 @@ namespace model
              strainmultimachinestiffness.row(i)[i]=alpha/(1.0+alpha);
              }
              } */
-            std::cout<<" stressmultimachinestiffness="<<stressmultimachinestiffness<<std::endl;
-            std::cout<<" strainmultimachinestiffness="<<strainmultimachinestiffness<<std::endl;
             
             
             IDreader<1,200,double> vReader(DN.simulationParameters.traitsIO.fFolder+"/F");
@@ -167,7 +141,7 @@ namespace model
                         for(int c=0;c<dim;++c)
                         {
                             //                                ExternalStrain(r,c)=temp(curCol);
-                            ExternalStrain(r,c)=vReader(runID,"e_"+std::to_string(r+1)+std::to_string(c+1));
+                            this->ExternalStrain(r,c)=vReader(runID,"e_"+std::to_string(r+1)+std::to_string(c+1));
                             //                              curCol+=1;
                         }
                     }
@@ -177,14 +151,14 @@ namespace model
                         for(int c=0;c<dim;++c)
                         {
                             //                                ExternalStress(r,c)=temp(curCol);
-                            ExternalStress(r,c)=vReader(runID,"s_"+std::to_string(r+1)+std::to_string(c+1)+" [mu]");
+                            this->ExternalStress(r,c)=vReader(runID,"s_"+std::to_string(r+1)+std::to_string(c+1)+" [mu]");
                             //                                curCol+=1;
                         }
                     }
-                    std::cout<<"reading External Strain=\n "<<ExternalStrain<<std::endl;
-                    std::cout<<"reading External StressField\n "<<ExternalStress<<std::endl;
-                    plasticStrain=ExternalStrain-elasticstrain(ExternalStress,nu_use);
-                    std::cout<<"Initial plastic Strain=\n "<<plasticStrain<<std::endl;
+                    std::cout<<"reading External Strain=\n "<<this->ExternalStrain<<std::endl;
+                    std::cout<<"reading External StressField\n "<<this->ExternalStress<<std::endl;
+                    this->plasticStrain=this->ExternalStrain-elasticstrain(this->ExternalStress,this->nu_use);
+                    std::cout<<"Initial plastic Strain=\n "<<this->plasticStrain<<std::endl;
                 }
                 else
                 {
@@ -192,11 +166,11 @@ namespace model
                     {// F may just have been created, but runID must be zero
                         MatrixDim pdr(DN.plasticDistortion());
                         // MatrixDim pdr(MatrixDim::Zero());
-                        plasticStrain=(pdr+pdr.transpose())*0.5;
-                        MatrixDim dstrain(ExternalStrain0+ExternalStrainRate*last_update_time-plasticStrain);
+                        this->plasticStrain=(pdr+pdr.transpose())*0.5;
+                        MatrixDim dstrain(ExternalStrain0+this->ExternalStrainRate*last_update_time - this->plasticStrain);
                         //MatrixDim S_strain(straininducedStress(dstrain,lambda));
-                        MatrixDim S_stress(ExternalStress0+ExternalStressRate*last_update_time);
-                        ExternalStress=stressconsidermachinestiffness(dstrain,S_stress);
+                        MatrixDim S_stress(ExternalStress0+this->ExternalStressRate*last_update_time);
+                        this->ExternalStress=this->stressconsidermachinestiffness(dstrain,S_stress);
                     }
                     else
                     {
@@ -209,14 +183,14 @@ namespace model
             {
                 MatrixDim pdr(DN.plasticDistortion());
                 // MatrixDim pdr(MatrixDim::Zero());
-                plasticStrain=(pdr+pdr.transpose())*0.5;
-                MatrixDim dstrain(ExternalStrain0+ExternalStrainRate*last_update_time-plasticStrain);
+                this->plasticStrain=(pdr+pdr.transpose())*0.5;
+                MatrixDim dstrain(ExternalStrain0+this->ExternalStrainRate*last_update_time - this->plasticStrain);
                 //MatrixDim S_strain(straininducedStress(dstrain,lambda));
-                MatrixDim S_stress(ExternalStress0+ExternalStressRate*last_update_time);
-                ExternalStress=stressconsidermachinestiffness(dstrain,S_stress);
+                MatrixDim S_stress(ExternalStress0 + this->ExternalStressRate*last_update_time);
+                this->ExternalStress=this->stressconsidermachinestiffness(dstrain,S_stress);
                 std::cout<<"UniformExternalLoadControllerController: F/F_0.txt cannot be opened."<<std::endl;
             }
-            std::cout<<"Initial ExternalStress=\n"<<ExternalStress<<std::endl;
+            std::cout<<"Initial ExternalStress=\n"<< this->ExternalStress<<std::endl;
         }
         
         
@@ -228,8 +202,8 @@ namespace model
             MatrixDim temp(MatrixDim::Zero());
             for (size_t i=0;i<voigtSize;i++)
             {
-                temp.row(voigtorder.row(i)[0])[voigtorder.row(i)[1]]=voigtvector[i];
-                temp.row(voigtorder.row(i)[1])[voigtorder.row(i)[0]]=voigtvector[i];
+                temp.row( this->voigtorder.row(i)[0])[this->voigtorder.row(i)[1]]=voigtvector[i];
+                temp.row(this->voigtorder.row(i)[1])[this->voigtorder.row(i)[0]]=voigtvector[i];
             }
             return (temp);
         }
@@ -240,7 +214,7 @@ namespace model
             Eigen::Matrix<double,voigtSize,1> temp(Eigen::Matrix<double,voigtSize,1>::Zero());
             for (size_t i=0;i<voigtSize;i++)
             {
-                temp.row(i)[0]=input_matrix.row(voigtorder.row(i)[0])[voigtorder.row(i)[1]];
+                temp.row(i)[0]=input_matrix.row(this->voigtorder.row(i)[0])[this->voigtorder.row(i)[1]];
             }
             return (temp);
         }
@@ -253,7 +227,7 @@ namespace model
              * \alpha=MachineStiffnessRatio, which is the stiffness ratio between machine stiffness and sample stiffness.
              * More details see <Physical Review Letters 117, 155502, 2016>.
              */
-            return (v2m(strainmultimachinestiffness*m2v(S_strain)+stressmultimachinestiffness*m2v(S_stress)));
+            return (v2m(this->strainmultimachinestiffness*m2v(S_strain)+this->stressmultimachinestiffness*m2v(S_stress)));
             
         }
         /**************************************************************************/
@@ -277,13 +251,13 @@ namespace model
         /**************************************************************************/
         MatrixDim stress(const VectorDim&) const override
         {
-            return enable? ExternalStress : MatrixDim::Zero();
+            return enable? this->ExternalStress : MatrixDim::Zero();
         }
 
         /*************************************************************************/
         MatrixDim strain(const VectorDim&) const override
         {
-            return enable? ExternalStrain : MatrixDim::Zero();
+            return enable? this->ExternalStrain : MatrixDim::Zero();
         }
         
         /*************************************************************************/
@@ -294,9 +268,9 @@ namespace model
                 const double deltaT = DN.simulationParameters.totalTime - last_update_time;
                 last_update_time += deltaT;
                 MatrixDim PSR=DN.plasticStrainRate();
-                ExternalStress+=stressconsidermachinestiffness(ExternalStrainRate*deltaT-PSR*deltaT,ExternalStressRate*deltaT);  //2017-12-7
-                plasticStrain+=PSR*deltaT;
-                ExternalStrain=elasticstrain(ExternalStress,nu_use)+plasticStrain;
+                this->ExternalStress+=this->stressconsidermachinestiffness(this->ExternalStrainRate*deltaT-PSR*deltaT,this->ExternalStressRate*deltaT);  //2017-12-7
+                this->plasticStrain+=PSR*deltaT;
+                this->ExternalStrain=elasticstrain(this->ExternalStress,this->nu_use)+this->plasticStrain;
             }
         }
         
@@ -305,7 +279,7 @@ namespace model
                     std::ofstream& f_file,
                     std::ofstream& F_labels) const override
         {
-            f_file<<ExternalStrain.row(0)<<" "<<ExternalStrain.row(1)<<" "<<ExternalStrain.row(2)<<" "<<ExternalStress.row(0)<<" "<<ExternalStress.row(1)<<" "<<ExternalStress.row(2)<<" ";
+            f_file<<this->ExternalStrain.row(0)<<" "<<this->ExternalStrain.row(1)<<" "<<this->ExternalStrain.row(2)<<" "<<this->ExternalStress.row(0)<<" "<<this->ExternalStress.row(1)<<" "<<this->ExternalStress.row(2)<<" ";
             
             if(runID==0)
             {
