@@ -146,10 +146,10 @@ def main():
     outputFolder = dddFolderPath + "/testrun3" # to be created within dddFolderPath
     # specify a density of loops
     tag = "pld0"
-    periodicLoopTargetDensity = 1e15;
-    periodicLoopSegmentCount = 100;
-    periodicLoopRadiusDistributionMean = 4e-8;
-    periodicLoopRadiusDistributionStd = 1e-8;
+    periodicLoopTargetDensity = 1e15
+    periodicLoopSegmentCount = 100
+    periodicLoopRadiusDistributionMean = 4e-8
+    periodicLoopRadiusDistributionStd = 1e-8
 
     dc.clearMicrostructureSpecifications()
     dc.specifyLoopDensity(
@@ -259,6 +259,156 @@ def main():
     print(f"after setting load and running 2 steps, plasticStrains:\n{plasticStrains}")
     print(f"after setting load and running 2 steps, shearStrains:\n{shearStrains}")
     print(f"after setting load and running 2 steps, shearStresses:\n{shearStresses}")
+
+    outputFolder = dddFolderPath + "/testrun5" # to be created within dddFolderPath
+    # specify a density of loops
+    tag = "pdl2"
+    loopDensitiesPerSlipSystem = {0:1.0e13, 12:1e15 }
+
+    print(f"dc.setCurrentStep(0)")
+    dc.setCurrentStep(0)
+
+    dc.clearMicrostructureSpecifications()
+    dc.specifyLoopDensitiesPerSlipSystem(
+            tag=tag,
+            loopDensitiesPerSlipSystem=loopDensitiesPerSlipSystem,
+            loopSegmentCount=periodicLoopSegmentCount,
+            loopRadiusMean=periodicLoopRadiusDistributionMean,
+            loopRadiusStd=periodicLoopRadiusDistributionStd
+            )
+    dc.specifyDipoleDensity(
+            tag="pdd2",
+            dipoleDensity=periodicDipoleTargetDensity
+            )
+    print(f"trying to run in {outputFolder}")
+    runInNewDir( dc, 10, c2g, tag, outputFolder)
+
+    print("calling dc.getPlasticStrains()")
+    plasticStrains = dc.getPlasticStrains()
+    print("calling dc.getResolvedShearStrains()")
+    shearStrains = dc.getResolvedShearStrains()
+    print("calling dc.getResolvedShearStresses()")
+    shearStresses = dc.getResolvedShearStresses()
+    print(f"plasticStrains:\n{plasticStrains}")
+    print(f"shearStrains:\n{shearStrains}")
+    print(f"shearStresses:\n{shearStresses}")
+
+    densities = dc.getDensityPerSlipSystem()
+    print(f"densities:\n{densities}")
+
+
+    #prismatic loops
+    outputFolder = dddFolderPath + "/testrun6" # to be created within dddFolderPath
+    # specify a density of loops
+    tag = "prd0"
+    prismaticLoopDensitiesPerSlipSystem = {0:1.0e13, 12:1e15 }
+
+    print(f"dc.setCurrentStep(0)")
+    dc.setCurrentStep(0)
+
+    prismaticLoopRadiusMean = 4e-8
+    prismaticLoopRadiusStd = 1e-8
+
+    dc.clearMicrostructureSpecifications()
+    dc.specifyPrismaticLoopDensitiesPerSlipSystem(
+            tag=tag,
+            prismaticLoopDensitiesPerSlipSystem=prismaticLoopDensitiesPerSlipSystem ,
+            prismaticLoopRadiusMean=prismaticLoopRadiusMean,
+            prismaticLoopRadiusStd=prismaticLoopRadiusStd
+            )
+
+    print(f"trying to run in {outputFolder}")
+    runInNewDir( dc, 10, c2g, tag, outputFolder)
+
+    print("calling dc.getPlasticStrains()")
+    plasticStrains = dc.getPlasticStrains()
+    print("calling dc.getResolvedShearStrains()")
+    shearStrains = dc.getResolvedShearStrains()
+    print("calling dc.getResolvedShearStresses()")
+    shearStresses = dc.getResolvedShearStresses()
+    print(f"plasticStrains:\n{plasticStrains}")
+    print(f"shearStrains:\n{shearStrains}")
+    print(f"shearStresses:\n{shearStresses}")
+
+    densities = dc.getDensityPerSlipSystem()
+    print(f"densities:\n{densities}")
+
+    #prismatic loops
+    outputFolder = dddFolderPath + "/testrun7" # to be created within dddFolderPath
+    # specify a density of loops
+    tag = "prd1"
+    prismaticLoopDensity = 1e15
+
+    print(f"dc.setCurrentStep(0)")
+    dc.setCurrentStep(0)
+
+    prismaticLoopRadiusMean = 4e-8
+    prismaticLoopRadiusStd = 1e-8
+
+    dc.clearMicrostructureSpecifications()
+    dc.specifyPrismaticLoopDensity(
+            tag=tag,
+            prismaticLoopDensity=prismaticLoopDensity,
+            prismaticLoopRadiusMean=prismaticLoopRadiusMean,
+            prismaticLoopRadiusStd=prismaticLoopRadiusStd
+            )
+
+    print(f"trying to run in {outputFolder}")
+    runInNewDir( dc, 10, c2g, tag, outputFolder)
+
+    print("calling dc.getPlasticStrains()")
+    plasticStrains = dc.getPlasticStrains()
+    print("calling dc.getResolvedShearStrains()")
+    shearStrains = dc.getResolvedShearStrains()
+    print("calling dc.getResolvedShearStresses()")
+    shearStresses = dc.getResolvedShearStresses()
+    print(f"plasticStrains:\n{plasticStrains}")
+    print(f"shearStrains:\n{shearStrains}")
+    print(f"shearStresses:\n{shearStresses}")
+
+    densities = dc.getDensityPerSlipSystem()
+    print(f"densities:\n{densities}")
+
+    #prismatic loops
+    outputFolder = dddFolderPath + "/testrun8" # to be created within dddFolderPath
+    # specify a density of loops
+    tag = "prl0"
+    ssIDs = np.array([ 4, 0])
+    prismaticLoopRadii = np.array([ 1.0e-8, 3.0e-8])
+    prismaticLoopCenters = np.array([[ 50, 100, 150],
+                            [ 150, 100, 50]])# [m]
+
+
+    print(f"dc.setCurrentStep(0)")
+    dc.setCurrentStep(0)
+
+    prismaticLoopRadiusMean = 4e-8
+    prismaticLoopRadiusStd = 1e-8
+
+    dc.clearMicrostructureSpecifications()
+    dc.specifyPrismaticLoops(
+            tag=tag,
+            slipSystemIDs=ssIDs,
+            prismaticLoopRadii=prismaticLoopRadii,
+            prismaticLoopCenters=prismaticLoopCenters  
+            )
+
+    print(f"trying to run in {outputFolder}")
+    runInNewDir( dc, 10, c2g, tag, outputFolder)
+
+    print("calling dc.getPlasticStrains()")
+    plasticStrains = dc.getPlasticStrains()
+    print("calling dc.getResolvedShearStrains()")
+    shearStrains = dc.getResolvedShearStrains()
+    print("calling dc.getResolvedShearStresses()")
+    shearStresses = dc.getResolvedShearStresses()
+    print(f"plasticStrains:\n{plasticStrains}")
+    print(f"shearStrains:\n{shearStrains}")
+    print(f"shearStresses:\n{shearStresses}")
+
+    densities = dc.getDensityPerSlipSystem()
+    print(f"densities:\n{densities}")
+
     return
 
 def runInNewDir( dc, Nsteps, c2g, tagIn, outputPath):

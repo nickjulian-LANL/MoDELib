@@ -6,8 +6,8 @@
  * model is distributed without any warranty under the
  * GNU General Public License (GPL) v2 <http://www.gnu.org/licenses/>.
  */
-#ifndef model_PeriodicLoopGeneratorInMem_H_
-#define model_PeriodicLoopGeneratorInMem_H_
+#ifndef model_PrismaticLoopGeneratorInMem_H_
+#define model_PrismaticLoopGeneratorInMem_H_
 #include <chrono>
 #include <random>
 #include <cmath>
@@ -38,30 +38,31 @@
 #include <GlidePlaneModule.h>
 #include <MeshModule.h>
 #include <Plane.h>
+#include <PlanesIntersection.h>
+#include <LatticePlane.h>
 #include <MicrostructureGeneratorBaseInMem.h>
 #include <MicrostructureGeneratorInMem.h>
 #include <MicrostructureSpecification.h>
 namespace model
 {
-   class PeriodicLoopGeneratorInMem : public MicrostructureGeneratorBaseInMem
+   class PrismaticLoopGeneratorInMem : public MicrostructureGeneratorBaseInMem
    {
       public:
-      static void generateSingle(
-            MicrostructureGeneratorInMem& mg,
-            const int& rSS,
-            const VectorDimD& center,
-            const double& radius,
-            const int& sides
-            );
+        static double generateSingle(
+              MicrostructureGeneratorInMem& mg,
+              const int& rSS,
+              const VectorDimD& center,
+              const double& radius
+              );
       void generateIndividual( MicrostructureGeneratorInMem& mg) override;
       void generateDensity( MicrostructureGeneratorInMem& mg) override;
       void generateDensitiesPerSlipSystem( MicrostructureGeneratorInMem& mg) override;
 
-      PeriodicLoopGeneratorInMem(
+      PrismaticLoopGeneratorInMem(
           const std::shared_ptr<MicrostructureSpecification>& microSpec
-          //const std::shared_ptr<PeriodicLoopIndividualSpecification>& microSpec
+          //const std::shared_ptr<PrismaticLoopIndividualSpecification>& microSpec
           );
-   }; // class PeriodicLoopGeneratorInMem
+   }; // class PrismaticLoopGeneratorInMem
 
 } // namespace model
 #endif

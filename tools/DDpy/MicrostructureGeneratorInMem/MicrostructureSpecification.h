@@ -43,6 +43,14 @@ namespace model
       const double periodicLoopRadiusDistributionStd;
 
       const double periodicDipoleTargetDensity;
+      const double prismaticLoopTargetDensity;
+      const std::map<int, double> periodicLoopTargetDensitiesPerSlipSystem;
+      const std::vector<int> prismaticLoopSlipSystemIDs;
+      const Eigen::Matrix<double, Eigen::Dynamic,3> prismaticLoopCenters;
+      const std::vector<double> prismaticLoopRadii;
+      const std::map<int, double> prismaticLoopTargetDensitiesPerSlipSystem;
+      const double prismaticLoopRadiusDistributionMean;
+      const double prismaticLoopRadiusDistributionStd;
 
       MicrostructureSpecification(
             const std::string& microstructureTypeIn,
@@ -56,7 +64,6 @@ namespace model
             const std::vector<double>& periodicDipoleHeightsIn, // # each value in the vector is the height of the dipole in number of slip planes
             const std::vector<int>& periodicDipoleNodesIn,
             const std::vector<double>& periodicDipoleGlideStepsIn, // # [b], each value in the vector is the length of the dipole step on its glide plane
-            // loops
             const std::vector<int>& periodicLoopSlipSystemIDsIn,
             const std::vector<double>& periodicLoopRadiiIn,
             const std::vector<long int>& periodicLoopSidesIn,
@@ -67,7 +74,15 @@ namespace model
             const double& periodicLoopRadiusDistributionMeanIn,
             const double& periodicLoopRadiusDistributionStdIn,
 
-            const double& periodicDipoleTargetDensity
+            const double& periodicDipoleTargetDensityIn,
+            const double& prismaticLoopTargetDensityIn,
+            const std::map<int, double>& periodicLoopTargetDensitiesPerSlipSystemIn,
+            const std::vector<int>& prismaticLoopSlipSystemIDs,
+            const Eigen::Matrix<double, Eigen::Dynamic,3>& prismaticLoopCentersIn, // # each row in the matrix is a the center of the loop
+            const std::vector<double>& prismaticLoopRadiiIn,
+            const std::map<int, double>& prismaticLoopTargetDensitiesPerSlipSystemIn,
+            const double& prismaticLoopRadiiMeanIn,
+            const double& prismaticLoopRadiiStdIn
             );// :
       //   microstructureType( microstructureTypeIn)
       //   ,style( styleIn)
@@ -77,8 +92,7 @@ namespace model
       //   ,periodicDipoleExitFaceIDs( periodicDipoleExitFaceIDsIn)
       //   ,periodicDipolePoints( periodicDipolePointsIn)
       //   ,periodicDipoleHeights( periodicDipoleHeightsIn)
-      //   ,periodicDipoleNodes( periodicDipoleNodesIn)
-      //   ,periodicDipoleGlideSteps( periodicDipoleGlideStepsIn)
+      //   ,periodicDipoleNodes( periodicDipoleNodesIn) //   ,periodicDipoleGlideSteps( periodicDipoleGlideStepsIn)
       //{} 
    }; // class MicrostructureSpecification
 

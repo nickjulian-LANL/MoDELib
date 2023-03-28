@@ -8,4 +8,5 @@ target_sources(${PROJECT_NAME} PRIVATE
    ${CMAKE_CURRENT_SOURCE_DIR}/MicrostructureGeneratorBaseInMem.cpp
    ${CMAKE_CURRENT_SOURCE_DIR}/PeriodicDipoleGeneratorInMem.cpp
    ${CMAKE_CURRENT_SOURCE_DIR}/PeriodicLoopGeneratorInMem.cpp
+   ${CMAKE_CURRENT_SOURCE_DIR}/PrismaticLoopGeneratorInMem.cpp
    )

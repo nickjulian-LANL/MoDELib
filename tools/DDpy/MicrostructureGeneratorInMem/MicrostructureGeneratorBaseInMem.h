@@ -58,6 +58,7 @@ namespace model
 
       virtual void generateIndividual( MicrostructureGeneratorInMem&) =0;
       virtual void generateDensity( MicrostructureGeneratorInMem&) =0;
+      virtual void generateDensitiesPerSlipSystem( MicrostructureGeneratorInMem&) =0;
     };
 } // namespace model
 #endif

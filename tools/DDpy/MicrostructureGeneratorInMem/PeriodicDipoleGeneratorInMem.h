@@ -57,6 +57,7 @@ namespace model
             );
       void generateIndividual( MicrostructureGeneratorInMem& mg) override;
       void generateDensity( MicrostructureGeneratorInMem& mg) override;
+      void generateDensitiesPerSlipSystem( MicrostructureGeneratorInMem& mg) override;
 
       PeriodicDipoleGeneratorInMem(
           const std::shared_ptr<MicrostructureSpecification>& microSpec

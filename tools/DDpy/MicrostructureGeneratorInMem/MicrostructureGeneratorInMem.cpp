@@ -17,6 +17,7 @@
 #include <MicrostructureGeneratorInMem.h>
 #include <PeriodicDipoleGeneratorInMem.h>
 #include <PeriodicLoopGeneratorInMem.h>
+#include <PrismaticLoopGeneratorInMem.h>
 //#include <InclusionsGeneratorInMem.h>
 //#include <IrradiationDefectsGeneratorInMem.h>
 //#include <VTKGeneratorInMem.h>
@@ -77,6 +78,11 @@ namespace model
                 success=this->emplace(tag,
                       new PeriodicLoopGeneratorInMem( spec)).second;
             }
+            else if(microstructureType=="PrismaticLoop")
+            {
+                success=this->emplace(tag,
+                      new PrismaticLoopGeneratorInMem( spec)).second;
+            }
             //else if(microstructureType=="Inclusions")
             //{
             //    success=this->emplace(tag,new InclusionsGeneratorInMem(microstructureFileName)).second;
@@ -107,6 +113,10 @@ namespace model
             else if(gen.second->style=="density")
             {
                 gen.second->generateDensity(*this);
+            }
+            else if(gen.second->style=="densitiesPerSlipSystem")
+            {
+                gen.second->generateDensitiesPerSlipSystem(*this);
             }
             else
             {

@@ -95,6 +95,13 @@ namespace model
       }
       return;
    }
+
+   void PeriodicDipoleGeneratorInMem::generateDensitiesPerSlipSystem( MicrostructureGeneratorInMem& mg)
+   {
+      std::cout << "error: PeriodicDipolGeneratorInMem::generateDensitiesPerSlipSystem( MicrostructureGeneratorInMem& mg) is not yet implemented" << std::endl;
+      return;
+   }
+
     //    std::cout<<magentaBoldColor<<"Generating periodic dipole density"<<defaultColor<<std::endl;
     //    const double targetPeriodicDipoleDensity(this->parser.readScalar<double>("targetPeriodicDipoleDensity",true));
     //    if(targetPeriodicDipoleDensity>0.0)

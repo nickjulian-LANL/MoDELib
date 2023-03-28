@@ -151,49 +151,76 @@ namespace model
         }
     }
 
-   //void PeriodicLoopGeneratorInMem::generateDensityPerSlipSystem(
-   //      MicrostructureGeneratorInMem& mg
-   //      )
-   //{
-   //     std::cout<<magentaBoldColor<<"Generating periodic loop density"<<defaultColor<<std::endl;
+   void PeriodicLoopGeneratorInMem::generateDensitiesPerSlipSystem(
+         MicrostructureGeneratorInMem& mg
+         )
+   {
+      std::cout<<magentaBoldColor<<"Generating periodic loop density"<<defaultColor<<std::endl;
 
-   //   const std::map<int, double> ssDensities(
-   //           microstructureSpecification->slipSystemDensities);
-   //   // iterate over ssDensities
-   //   // check validity of ssID
-   //   //
-   //   if(targetDensity>0.0)
-   //   {
-   //      const int numberOfSides(
-   //         microstructureSpecification->periodicLoopSegmentCount);
-   //      const double radiusDistributionMean(
-   //         microstructureSpecification->periodicLoopRadiusDistributionMean);
-   //         const double radiusDistributionStd(
-   //               microstructureSpecification->periodicLoopRadiusDistributionStd);
-   //         std::normal_distribution<double> radiusDistribution(radiusDistributionMean/mg.poly.b_SI,radiusDistributionStd/mg.poly.b_SI);
-   //         std::mt19937 generator;
-   //         double density=0.0;
-   //         while( density < targetDensity)
-   //         {
-   //             const std::pair<LatticeVector<dim>, int> rp(mg.poly.randomLatticePointInMesh());
-   //             const LatticeVector<dim> L0=rp.first;
-   //             const size_t grainID=rp.second;
-   //             std::uniform_int_distribution<> ssDist(0,mg.poly.grain(grainID).singleCrystal->slipSystems().size()-1);
-   //             const int rSS(ssDist(generator)); // a random SlipSystem
-   //             const double radius(radiusDistribution(generator));
-   //             try
-   //             {
-   //                 generateSingle(mg,rSS,L0.cartesian(),radius,numberOfSides);
-   //                 density+=2.0*std::numbers::pi*radius/mg.mesh.volume()/std::pow(mg.poly.b_SI,2);
-   //                 std::cout<<"periodic loop density="<<density<<std::endl;
-   //             }
-   //             catch(const std::exception& e)
-   //             {
-   //                 
-   //             }
-   //         }
-   //     }
-   // }
+      //const std::map<int, double> ssDensities(
+      //   microstructureSpecification->periodicLoopTargetDensitiesPerSlipSystem);
+      //the following five instantiations could be made slipsystem specific
+      const int numberOfSides(
+         microstructureSpecification->periodicLoopSegmentCount);
+      const double radiusDistributionMean(
+         microstructureSpecification->periodicLoopRadiusDistributionMean);
+      const double radiusDistributionStd(
+         microstructureSpecification->periodicLoopRadiusDistributionStd);
+      std::normal_distribution<double> radiusDistribution(radiusDistributionMean/mg.poly.b_SI,radiusDistributionStd/mg.poly.b_SI);
+      std::mt19937 generator;
+
+      // iterate over ssDensities
+      for ( const auto& ssDensitiesItr : microstructureSpecification->periodicLoopTargetDensitiesPerSlipSystem)
+      {
+         size_t targetSlipSystemID( ssDensitiesItr.first);
+         double targetDensity( ssDensitiesItr.second);
+         if( targetDensity > 0.0)
+         {
+            double density=0.0;
+            while( density < targetDensity)
+            {
+               const std::pair<LatticeVector<dim>, int> rp(mg.poly.randomLatticePointInMesh());
+               const LatticeVector<dim> L0=rp.first;
+               const size_t grainID=rp.second;
+
+               // check validity of targetSlipSystemID
+               bool slipSystemIDGood = false;
+               for ( const auto& ss : mg.poly.grain(grainID).singleCrystal->slipSystems())
+               {
+                 if ( targetSlipSystemID == ss->sID)
+                 {
+                    slipSystemIDGood = true;
+                 }
+               }
+
+               if ( ! slipSystemIDGood)
+               {
+                  std::cout << "warning: "
+                     << "from PeriodicLoopGeneratorInMem::generateDensityPerSlipSystem()"
+                     << " parameter microstructureSpecification->periodicLoopTargetDensitiesPerSlipSystem "
+                     << " target slip system ID "
+                     << targetSlipSystemID << " is invalid" << std::endl;
+                  //continue; // find another point
+                  return; // fail 
+               }
+
+               const double radius(radiusDistribution(generator));
+               try
+               {
+                  generateSingle(mg,targetSlipSystemID,L0.cartesian(),radius,numberOfSides);
+                  // Note: density assigned 0 when switching slip systems
+                  density+=2.0*std::numbers::pi*radius/mg.mesh.volume()/std::pow(mg.poly.b_SI,2);
+                  std::cout << "slip system " << targetSlipSystemID
+                     << " periodic loop density=" << density << std::endl;
+               }
+               catch(const std::exception& e)
+               {
+                       
+               }
+            }
+         }
+      }
+   }
 
 //    void PeriodicDipoleGeneratorInMem::insertJunctionLoop(MicrostructureGeneratorInMem& mg,
 //                                                     std::map<VectorDimD,size_t,CompareVectorsByComponent<double,dim,float>>& uniqueNetworkNodeMap,

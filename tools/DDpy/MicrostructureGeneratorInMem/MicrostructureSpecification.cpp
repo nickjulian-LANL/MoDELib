@@ -33,7 +33,15 @@ namespace model
             const long int& periodicLoopSegmentCountIn,
             const double& periodicLoopRadiusDistributionMeanIn,
             const double& periodicLoopRadiusDistributionStdIn,
-            const double& periodicDipoleTargetDensityIn
+            const double& periodicDipoleTargetDensityIn,
+            const double& prismaticLoopTargetDensityIn,
+            const std::map<int, double>& periodicLoopTargetDensitiesPerSlipSystemIn,
+            const std::vector<int>& prismaticLoopSlipSystemIDsIn,
+            const Eigen::Matrix<double, Eigen::Dynamic,3>& prismaticLoopCentersIn, // # each row in the matrix is a the center of the loop
+            const std::vector<double>& prismaticLoopRadiiIn,
+            const std::map<int, double>& prismaticLoopTargetDensitiesPerSlipSystemIn,
+            const double& prismaticLoopRadiiMeanIn,
+            const double& prismaticLoopRadiiStdIn
             ) :
          microstructureType( microstructureTypeIn)
          ,style( styleIn)
@@ -55,6 +63,14 @@ namespace model
          ,periodicLoopRadiusDistributionMean( periodicLoopRadiusDistributionMeanIn)
          ,periodicLoopRadiusDistributionStd( periodicLoopRadiusDistributionStdIn)
          ,periodicDipoleTargetDensity( periodicDipoleTargetDensityIn)
+         ,prismaticLoopTargetDensity( prismaticLoopTargetDensityIn)
+         ,periodicLoopTargetDensitiesPerSlipSystem( periodicLoopTargetDensitiesPerSlipSystemIn)
+         ,prismaticLoopSlipSystemIDs( prismaticLoopSlipSystemIDsIn)
+         ,prismaticLoopCenters( prismaticLoopCentersIn)
+         ,prismaticLoopRadii( prismaticLoopRadiiIn)
+         ,prismaticLoopTargetDensitiesPerSlipSystem( prismaticLoopTargetDensitiesPerSlipSystemIn)
+         ,prismaticLoopRadiusDistributionMean( prismaticLoopRadiiMeanIn)
+         ,prismaticLoopRadiusDistributionStd( prismaticLoopRadiiStdIn)
       {}
    //PeriodicDipoleIndividualSpecification::PeriodicDipoleIndividualSpecification(
    //   const DislocationDynamicsBase<3>::DislocationDynamicsBaseType& ddBaseIn,
