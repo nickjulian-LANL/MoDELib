@@ -448,6 +448,7 @@ void ddpy::DDInterface::setExternalLoad(
    //  assigned when reading the state of the external load from F/F_0.txt.
    if ( ExternalStress0In.has_value())
    {
+      // TODO: this block has an error
       auto ExternalStress0InBuf = ExternalStress0In.value().unchecked<2>();
       for ( ssize_t ii=0; ii < ExternalStress0In.value().shape()[0]; ++ii)
          for ( ssize_t jj=0; jj < ExternalStress0In.value().shape()[1]; ++jj)
@@ -455,6 +456,21 @@ void ddpy::DDInterface::setExternalLoad(
             DC->externalLoadController->ExternalStress( ii, jj)
                = ExternalStress0InBuf( ii, jj);
          }
+
+      MatrixDim pdr( DC->DN->plasticDistortion());
+      DC->externalLoadController->plasticStrain
+            = ( pdr +pdr.transpose())*0.5;
+      MatrixDim dstrain(
+         DC->externalLoadController->ExternalStrain // possibly new
+         - DC->externalLoadController->plasticStrain
+         );
+
+      DC->externalLoadController->ExternalStress
+         = DC->externalLoadController->stressconsidermachinestiffness(
+               dstrain,
+               DC->externalLoadController->ExternalStress
+               );
+
       assert(
                (
                   DC->externalLoadController->ExternalStress
@@ -462,12 +478,6 @@ void ddpy::DDInterface::setExternalLoad(
                ).norm()
                < DBL_EPSILON && "ExternalStress0 is not symmetric."
             );
-      DC->externalLoadController->plasticStrain
-         = DC->externalLoadController->ExternalStrain
-          - DC->externalLoadController->elasticstrain(
-                DC->externalLoadController->ExternalStress,
-                DC->externalLoadController->nu_use
-                ); // mimicking assignment when reading from F/F_0.txt
    }
    else
    {  // If ExternalStress0In is not specified
@@ -1349,6 +1359,7 @@ void ddpy::DDInterface::setOutputPath( const std::string& outputPath)
    //   std::cout << "error: defective crystal not yet read" << std::endl;
    //   return;
    //}
+   if ( ddBase == nullptr) readddBase();
    std::cout << "prior evlFolder: "
       << ddBase->simulationParameters.traitsIO.evlFolder << std::endl; // debug
    std::cout << "assigning " << outputPath + "/evl" << " to evlFolder" << std::endl;
