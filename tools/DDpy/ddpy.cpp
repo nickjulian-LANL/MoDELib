@@ -461,7 +461,7 @@ void ddpy::DDInterface::setExternalLoad(
       DC->externalLoadController->plasticStrain
             = ( pdr +pdr.transpose())*0.5;
       MatrixDim dstrain(
-         DC->externalLoadController->ExternalStrain // possibly new
+         DC->externalLoadController->ExternalStrain
          - DC->externalLoadController->plasticStrain
          );
 
@@ -1644,11 +1644,11 @@ PYBIND11_MODULE( ddpy, m) {
             py::kw_only(),
             py::arg( "tag").none(false),
             py::arg( "loopDensitiesPerSlipSystem").none(false),
-            py::arg( "loopSegmentCount").none(false), // keep
-            py::arg( "loopRadiusMean").none(false), // keep
-            py::arg( "loopRadiusStd").none(false) // keep
+            py::arg( "loopSegmentCount").none(false),
+            py::arg( "loopRadiusMean").none(false),
+            py::arg( "loopRadiusStd").none(false)
           )
-      .def("specifyPrismaticLoops", // TODO: implememnt
+      .def("specifyPrismaticLoops",
             &ddpy::DDInterface::specifyPrismaticLoops,
             py::kw_only(),
             py::arg( "tag").none(false),
@@ -1656,7 +1656,7 @@ PYBIND11_MODULE( ddpy, m) {
             py::arg( "prismaticLoopRadii").none(false),
             py::arg( "prismaticLoopCenters").none(false)
           )
-      .def("specifyPrismaticLoopDensity", // TODO: implememnt
+      .def("specifyPrismaticLoopDensity",
             &ddpy::DDInterface::specifyPrismaticLoopDensity,
             py::kw_only(),
             py::arg( "tag").none(false),
@@ -1664,13 +1664,13 @@ PYBIND11_MODULE( ddpy, m) {
             py::arg( "prismaticLoopRadiusMean").none(false),
             py::arg( "prismaticLoopRadiusStd").none(false)
           )
-      .def("specifyPrismaticLoopDensitiesPerSlipSystem", // TODO: implememnt
+      .def("specifyPrismaticLoopDensitiesPerSlipSystem",
             &ddpy::DDInterface::specifyPrismaticLoopDensitiesPerSlipSystem,
             py::kw_only(),
             py::arg( "tag").none(false),
             py::arg( "prismaticLoopDensitiesPerSlipSystem").none(false),
-            py::arg( "prismaticLoopRadiusMean").none(false), // keep
-            py::arg( "prismaticLoopRadiusStd").none(false) // keep
+            py::arg( "prismaticLoopRadiusMean").none(false),
+            py::arg( "prismaticLoopRadiusStd").none(false)
           )
       .def("specifyDipoleDensity",
             &ddpy::DDInterface::specifyDipoleDensity,
