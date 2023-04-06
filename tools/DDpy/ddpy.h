@@ -67,14 +67,69 @@ class DDInterface
       std::vector<std::string> acceptableLattices;//({"bcc","fcc"});
       std::vector<std::string> acceptableMaterials;//({"Cu","Fe_320"});
 
-      bool debugFlag;
 
       void resetStaticIDs();
       void readddBase();
 
+      // parameters for collecting measurements
+      //size_t stepsBetweenStrainRateMeasurements;
+      //size_t stepsBetweenDensityMeasurements;
+      bool collectMechanicalMeasurements;
+      //bool collectPlasticStrainRates;
+      //bool collectResolvedStrainRates;
+      //bool collectDensities;
+
+      std::vector<std::pair<size_t,size_t> > tensorComponentKeys;
+      bool debugFlag;
+
    public:
       typedef Eigen::Matrix<double,3,1> VectorDim;
       typedef Eigen::Matrix<double,3,3> MatrixDim;
+
+      // times at which measurements were taken
+      std::shared_ptr<
+                  //pybind11::array_t<double, pybind11::array::c_style>
+                  std::vector<double>
+         > times;
+      std::shared_ptr<
+                  //pybind11::array_t<ssize_t, pybind11::array::c_style>
+                  std::vector<ssize_t>
+         > runIDs;
+
+      // measured parameters indexed by slip system and sequential in time
+      //std::map< size_t, // slip system,
+      //   std::vector<double> // time series of data
+      //      > plasticStrainRates;
+      std::map<
+         size_t, // slip system,
+         std::shared_ptr<
+                  //pybind11::array_t<double, pybind11::array::c_style>
+                  std::vector<double>
+            > // time series of data
+         > slipSystemPlasticDistortion;
+      //std::map< size_t, std::vector<double> > resolvedStrainRates;
+      std::map<
+         size_t,
+         std::shared_ptr<
+                  //pybind11::array_t<double, pybind11::array::c_style>
+                  std::vector<double>
+            >
+         >
+         densityPerSlipSystem;
+      std::map<
+         std::pair<size_t,size_t>, // keys are matrix indices: 11, 22, 33, 12, 13, 23
+         std::shared_ptr<
+                  //pybind11::array_t<double, pybind11::array::c_style>
+                  std::vector<double>
+               > // time series of stress tensor component
+            > stressTensorComponents;
+      //std::map< std::pair<size_t,size_t>, // keys are matrix indices: 11, 22, 33, 12, 13, 23
+      //   std::shared_ptr< std::vector<double> > // time series of stress tensor component
+      //      > strainTensorComponents;
+
+      size_t stepsBetweenMeasurements;
+
+
       DDInterface( const std::string& dddFolderPathIn):
           dddFolderPath( dddFolderPathIn)
           , boxBounds( std::vector<double>({0,100,0,100,0,100}))
@@ -85,10 +140,28 @@ class DDInterface
           , stackingFaultNoiseMode( 0)
           , acceptableLattices( std::vector<std::string>({"bcc","fcc"}))
           , acceptableMaterials( std::vector<std::string>({"Fe_320","Cu"}))
+          , collectMechanicalMeasurements( false)
+          //, collectPlasticStrainRates( false)
+          //, collectResolvedStrainRates( false)
+          //, collectDensities( false)
+          , tensorComponentKeys( {
+               std::pair<size_t,size_t>(1,1),
+               std::pair<size_t,size_t>(2,2),
+               std::pair<size_t,size_t>(3,3),
+               std::pair<size_t,size_t>(1,2),
+               std::pair<size_t,size_t>(1,3),
+               std::pair<size_t,size_t>(2,3)
+               })
           , debugFlag( true)
+          , stepsBetweenMeasurements( 1)
+          //, stepsBetweenStrainRateMeasurements( 1)
+          //, stepsBetweenDensityMeasurements( 1)
       {
          resetStaticIDs();
+         // measurements initially empty, since slip system IDs are not
+         //  yet determined
       };
+
 
       std::list<std::shared_ptr<model::MicrostructureSpecification>> microstructureSpecifications;
 
@@ -112,6 +185,31 @@ class DDInterface
       //py::dict
       //   getSlipSystemBurgersVectors() const;
 
+      std::tuple<
+         //std::shared_ptr<
+                  pybind11::array_t<double, pybind11::array::c_style>
+                  //std::vector<double>
+            //>
+            , // time
+         //std::shared_ptr<
+                  pybind11::array_t<ssize_t, pybind11::array::c_style>
+                  //std::vector<size_t>
+            //>
+            , // runIDs
+         std::map<
+            std::string, // property name
+            std::map<
+               ssize_t, // slip system ID or tensor component index
+               //std::shared_ptr<
+                  pybind11::array_t<double, pybind11::array::c_style>
+                  //std::vector<double>
+                  >  // time series data
+               //>
+            >
+         >
+         getMechanicalMeasurements();
+      void clearMechanicalMeasurements();
+
       std::string getFolderPath(){ return dddFolderPath;}
       void setEndingStep( const long int& endingStep);
       size_t getCurrentStep();
@@ -125,7 +223,7 @@ class DDInterface
             const double& zlo,
             const double& zhi
             );
-      void runGlideSteps( size_t Nsteps);
+      void runGlideSteps( const size_t& stepsToRun);
       double getBurgersMagnitude();
       void readBurgersMagnitude( const std::string& materialPath);
       void readDefectiveCrystal();
@@ -224,6 +322,39 @@ class DDInterface
             pybind11::array::c_style | pybind11::array::forcecast>>&
                MachineStiffnessRatio // Voigt format 11 22 33 12 23 13
             );
+
+      void enableMechanicalMeasurements(
+            std::optional< size_t> stepsBetweenMeasurementIn = 1
+            )
+      {
+         if ( stepsBetweenMeasurementIn.has_value())
+         {
+            stepsBetweenMeasurements = stepsBetweenMeasurementIn.value();
+         }
+         collectMechanicalMeasurements = true;
+         //collectPlasticStrainRates = true;
+         //collectResolvedStrainRates = true;
+         //collectDensities = true;
+         return;
+      }
+
+      void disableMechanicalMeasurements()
+      {
+         collectMechanicalMeasurements = false;
+         //collectPlasticStrainRates = false;
+         //collectResolvedStrainRates = false;
+         //collectDensities = false;
+         return;
+      }
+
+      //void enableDensityMeasurements(
+      //      //size_t stepsBetweenMeasurementIn = 1
+      //      )
+      //{
+      //   //stepsBetweenDensityMeasurements = stepsBetweenMeasurementIn;
+      //   collectDensities = true;
+      //   return;
+      //}
       //~DDInterface()
       //{
       //   return;

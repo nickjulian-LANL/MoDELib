@@ -448,7 +448,6 @@ void ddpy::DDInterface::setExternalLoad(
    //  assigned when reading the state of the external load from F/F_0.txt.
    if ( ExternalStress0In.has_value())
    {
-      // TODO: this block has an error
       auto ExternalStress0InBuf = ExternalStress0In.value().unchecked<2>();
       for ( ssize_t ii=0; ii < ExternalStress0In.value().shape()[0]; ++ii)
          for ( ssize_t jj=0; jj < ExternalStress0In.value().shape()[1]; ++jj)
@@ -456,21 +455,6 @@ void ddpy::DDInterface::setExternalLoad(
             DC->externalLoadController->ExternalStress( ii, jj)
                = ExternalStress0InBuf( ii, jj);
          }
-
-      MatrixDim pdr( DC->DN->plasticDistortion());
-      DC->externalLoadController->plasticStrain
-            = ( pdr +pdr.transpose())*0.5;
-      MatrixDim dstrain(
-         DC->externalLoadController->ExternalStrain
-         - DC->externalLoadController->plasticStrain
-         );
-
-      DC->externalLoadController->ExternalStress
-         = DC->externalLoadController->stressconsidermachinestiffness(
-               dstrain,
-               DC->externalLoadController->ExternalStress
-               );
-
       assert(
                (
                   DC->externalLoadController->ExternalStress
@@ -478,6 +462,12 @@ void ddpy::DDInterface::setExternalLoad(
                ).norm()
                < DBL_EPSILON && "ExternalStress0 is not symmetric."
             );
+      DC->externalLoadController->plasticStrain
+         = DC->externalLoadController->ExternalStrain
+          - DC->externalLoadController->elasticstrain(
+                DC->externalLoadController->ExternalStress,
+                DC->externalLoadController->nu_use
+                ); // mimicking assignment when reading from F/F_0.txt
    }
    else
    {  // If ExternalStress0In is not specified
@@ -648,12 +638,740 @@ void ddpy::DDInterface::writeConfigToTxt()
    return;
 }
 
-void ddpy::DDInterface::runGlideSteps( size_t Nsteps)
+void ddpy::DDInterface::runGlideSteps( const size_t& stepsToRun)
 {
    if ( DC == nullptr) readDefectiveCrystal();
+   if ( DC->DN == nullptr)
+   {
+      std::cout << "error: ddpy::DDInterface::runGlideSteps()"
+         << " DefectiveCrystal::DefectiveNetwork not yet instantiated."
+         << std::endl;
+      return;
+   }
+   if ( DC->externalLoadController == nullptr)
+   {
+      std::cout << "error: ddpy::DDInterface::runGlideSteps()"
+        << " DC->externalLoadController isn't instantiated" << std::endl;
+      return;
+   }
 
-   setEndingStep( getCurrentStep() + Nsteps);
-   DC->runGlideSteps();
+   if ( collectMechanicalMeasurements
+         //collectPlasticStrainRates || collectResolvedStrainRates
+         //|| collectDensities
+      )
+   {
+      ssize_t initialStep = DC->simulationParameters.runID;
+      ssize_t endStep = initialStep + stepsToRun;
+      if ( DC->poly.grains.size() != 1)
+      {
+         std::cout << "error: ddpy::DDInterface::runGlideSteps()"
+            << " is not yet able to collect measurements when"
+            << " the number of grains is not 1."
+            << " DC->poly.grains.size() "
+            << DC->poly.grains.size()
+            //<< ", collectPlasticStrain: " << collectPlasticStrain
+            //<< ", collectResolvedStrainRates: " << collectResolvedStrainRates
+            //<< ", collectDensities: " << collectDensities
+            << std::endl;
+         return;
+      }
+      const auto& grain = *(DC->poly.grains.begin());
+      const int grainID = grain.second.grainID;
+
+      size_t measurementNumber;
+      if ( times == nullptr)
+      {
+         //times = new pybind11::array_t<double, pybind11::array::c_style>;
+         //runIDs = new pybind11::array_t<ssize_t, pybind11::array::c_style>;
+         times = std::make_shared< std::vector<double> >();
+         runIDs = std::make_shared< std::vector<ssize_t> >();
+      }
+      measurementNumber = times->size();
+      if ( runIDs->size() != measurementNumber)
+      {
+         std::cout << "error: ddpy::DDInterface::runGlideSteps()"
+            << " pre-existing measurement data has differing sizes"
+            << std::endl;
+      }
+
+      //times.emplace_back( prevTime);
+      //runIDs.emplace_back( initialStep);
+      //// DC->simulationParameters.totalTime - prevTime
+
+      // allocate and initiate temporary storage for measured quantities
+      std::map<std::pair<int,int>,double> currentSSPD;//key:grainID,ssID
+      currentSSPD = DC->DN->slipSystemPlasticDistortion();
+      //MatrixDim strain
+      //   = DC->externalLoadController->strain( VectorDim::Zero());
+      MatrixDim stress
+         = DC->externalLoadController->stress( VectorDim::Zero());
+
+      //// ensure times, runIDs and measured quantity vectors have same size
+      //if ( times.size() != runIDs.size())
+      //{
+      //   std::cout << "error, ddpy::DDInterface::runGlideSteps()"
+      //      << ": times.size() " << times.size()
+      //     << " != runIDs.size() " << runIDs.size() << std::endl;
+      //   return;
+      //}
+      //for ( const auto& ss : grain.second.singleCrystal->slipSystems())
+      //{
+      //   //if ( times.size() != plasticStrainRates[ss->sID].size())
+      //   //{
+      //   //   std::cout << "error, ddpy::DDInterface::runGlideSteps()"
+      //   //      << ": times.size() " << times.size()
+      //   //      << " != plasticStrainRates[" << ss->sID << "].size() "
+      //   //      << plasticStrainRates[ss->sID].size() << std::endl;
+      //   //   return;
+      //   //}
+      //   //if ( times.size() != resolvedStrainRates[ss->sID].size())
+      //   //{
+      //   //   std::cout << "error, ddpy::DDInterface::runGlideSteps()"
+      //   //      << ": times.size() " << times.size()
+      //   //      << " != resolvedStrainRates[" << ss->sID << "].size() "
+      //   //      << resolvedStrainRates[ss->sID].size() << std::endl;
+      //   //   return;
+      //   //}
+      //   if ( times.size() != densityPerSlipSystem[ss->sID].size())
+      //   {
+      //      std::cout << "error, ddpy::DDInterface::runGlideSteps()"
+      //         << ": times.size() " << times.size()
+      //         << " != densityPerSlipSystem[" << ss->sID << "].size() "
+      //         << densityPerSlipSystem[ss->sID].size() << std::endl;
+      //      return;
+      //   }
+      //} // ensured times, runIDs and measured quantity vectors have same size
+
+      // determine the required size of contiguous measurement vectors
+
+      size_t sizeOfMeasurementVector
+         = times->size()
+            + static_cast<size_t>(
+                  std::ceil(
+                     static_cast<double>( stepsToRun)
+                     / static_cast<double>( stepsBetweenMeasurements)
+                  )+1 // allow for storing initial state
+               );
+
+      try
+      {
+         times->reserve( sizeOfMeasurementVector);
+         runIDs->reserve( sizeOfMeasurementVector);
+      }
+      catch(const std::exception& e)
+      {
+         std::cout << "error: ddpy::DDInterface::runGlideSteps()"
+            << " could not reserve vector<> storage for "
+            << "times and runIDs. Maybe try decreasing the total number"
+            << " of measurements by increasing"
+            << " DDInterface::stepsBetweenMeasurements"
+            << " or disabling measurements for a greater portion of steps."
+            << std::endl;
+         return;
+      }
+
+      times->push_back( DC->simulationParameters.totalTime);
+      runIDs->push_back( DC->simulationParameters.runID);
+      //times[ measurementNumber] = DC->simulationParameters.totalTime;
+      //runIDs[ measurementNumber] = DC->simulationParameters.runID;
+
+      // allocate and initialized densityPerSlipSystem,
+      // // skip resolved quantities
+      for ( const auto& ss : grain.second.singleCrystal->slipSystems())
+      {
+         // if ssID isn't in the map yet, instantiate first step w/0.0
+         //  else, append a new element to the slip system's vector
+         if  (! densityPerSlipSystem.contains( ss->sID))
+         {
+            try
+            {
+               densityPerSlipSystem.try_emplace(
+                  ss->sID, // key
+                  std::make_shared< std::vector<double> >()//( sizeOfMeasurementVector,
+                     //0.0) // skip initial configuration
+                  );
+               densityPerSlipSystem[ ss->sID]->reserve(
+                     sizeOfMeasurementVector
+                     );
+            }
+            catch( const std::exception& e)
+            {
+               std::cout << "error: ddpy::DDInterface::runGlideSteps()"
+                  << " could not reserve vector<> storage for "
+                  << "densityPerSlipSystem[" << ss->sID << "]"
+                  << ". Maybe try increasing "
+                  << "DDInterface::stepsBetweenMeasurements."
+                  << std::endl;
+               return;
+            }
+         }
+         else
+         {// densityPerSlipSystem[ ssID] already contains a vector<double>
+            // append an appropriate number of steps to it
+            try
+            {
+               densityPerSlipSystem[ ss->sID]->reserve(
+                     sizeOfMeasurementVector
+                     );
+            }
+            catch(const std::exception& e)
+            {
+               std::cout << "error: ddpy::DDInterface::runGlideSteps()"
+                  << " could not reserve vector<> storage for "
+                  << "densityPerSlipSystem[" << ss->sID << "]"
+                  << ". Maybe try increasing "
+                  << "DDInterface::stepsBetweenMeasurements."
+                  << std::endl;
+               return;
+            }
+         }
+         densityPerSlipSystem[ ss->sID]->push_back( 0.0);
+
+         // if ssID isn't in the map yet, instantiate first step w/0.0
+         //  else, append a new element to the slip system's vector
+         if  (! slipSystemPlasticDistortion.contains( ss->sID))
+         {
+            try
+            {
+               slipSystemPlasticDistortion.try_emplace(
+                  ss->sID, // key
+                  std::make_shared< std::vector<double> >()
+                  );
+               slipSystemPlasticDistortion[ ss->sID]->reserve(
+                     sizeOfMeasurementVector
+                     );
+            }
+            catch( const std::exception& e)
+            {
+               std::cout << "error: ddpy::DDInterface::runGlideSteps()"
+                  << " could not reserve vector<> storage for "
+                  << "slipSystemPlasticDistortion[" << ss->sID << "]"
+                  << ". Maybe try increasing "
+                  << "DDInterface::stepsBetweenMeasurements."
+                  << std::endl;
+               return;
+            }
+         }
+         else
+         {// slipSystemPlasticDistortion[ ssID] already contains a vector<double>
+            // append an appropriate number of steps to it
+            try
+            {
+               slipSystemPlasticDistortion[ ss->sID]->reserve(
+                     sizeOfMeasurementVector);
+            }
+            catch(const std::exception& e)
+            {
+               std::cout << "error: ddpy::DDInterface::runGlideSteps()"
+                  << " could not reserve vector<> storage for "
+                  << "slipSystemPlasticDistortion[" << ss->sID << "]"
+                  << ". Maybe try increasing "
+                  << "DDInterface::stepsBetweenMeasurements."
+                  << std::endl;
+               return;
+            }
+         }
+
+         slipSystemPlasticDistortion[ ss->sID]->push_back(
+            currentSSPD[ std::pair<int,int>( grainID, ss->sID)]
+            );
+
+      } // for ( const auto& ss : grain.second.singleCrystal->slipSystems())
+
+      // initialize densityPerSlipSystem
+      for ( const auto& loop : DC->DN->loops())
+      {
+         if ( loop.second.lock()->slipSystem() != nullptr)
+         {
+            for ( const auto& loopLink : loop.second.lock()->loopLinks())
+            {
+               if ( loopLink->networkLink())
+               {
+                  if ( ! loopLink->networkLink()->hasZeroBurgers())
+                  {
+                     if (( !loopLink->networkLink()->isBoundarySegment())
+                           &&(!loopLink->networkLink()->isGrainBoundarySegment())
+                        )
+                     {
+                        //densityPerSlipSystem[ ss->sID][ measurementNumber]
+                        densityPerSlipSystem[
+                           loop.second.lock()->slipSystem()->sID
+                        ]->back()
+                           += loopLink->networkLink()->chord().norm()
+                              /(
+                               loopLink->networkLink()->loopLinks().size()
+                               * ddBase->mesh.volume()
+                               * std::pow( ddBase->poly.b_SI, 2)
+                               );
+                     }
+                  }
+               }
+            }
+         }
+      } // accumulated density per slip system, initial density skipped
+
+      // allocate stressTensorComponents // and strainTensorComponents
+      for ( const auto& key : tensorComponentKeys)
+      {
+         if ( ! stressTensorComponents.contains( key))
+         {
+            try
+            {
+               stressTensorComponents.try_emplace(
+                     key,
+                     std::make_shared< std::vector<double> >()// sizeOfMeasurementVector)
+                     );
+               stressTensorComponents[ key]->reserve(
+                     sizeOfMeasurementVector
+                     );
+            }
+            catch( const std::exception& e)
+            {
+               std::cout << "error: ddpy::DDInterface::runGlideSteps()"
+                  << " could not reserve vector<> storage for "
+                  << "stressTensorComponents[("
+                  << key.first << "," << key.second << ")]"
+                  << ". Maybe try increasing "
+                  << "DDInterface::stepsBetweenMeasurements."
+                  << std::endl;
+               return;
+            }
+         }
+         else
+         {// stressTensorComponents[key] already contains a vector<double>
+            // append an appropriate number of steps to it
+            try
+            {
+               stressTensorComponents[ key]->reserve(
+                     sizeOfMeasurementVector
+                     );
+            }
+            catch(const std::exception& e)
+            {
+               std::cout << "error: ddpy::DDInterface::runGlideSteps()"
+                  << " could not reserve vector<> storage for "
+                  << "stressTensorComponents[("
+                  << key.first << "," << key.second << ")]"
+                  << ". Maybe try increasing "
+                  << "DDInterface::stepsBetweenMeasurements."
+                  << std::endl;
+               return;
+            }
+         }
+
+         //if ( ! strainTensorComponents.contains( key))
+         //{
+         //   try
+         //   {
+         //      strainTensorComponents.try_emplace(
+         //            key,
+         //            std::vector<double>()// sizeOfMeasurementVector)
+         //            );
+         //      strainTensorComponents[ key].reserve(
+         //            sizeOfMeasurementVector
+         //            );
+         //   }
+         //   catch( const std::exception& e)
+         //   {
+         //      std::cout << "error: ddpy::DDInterface::runGlideSteps()"
+         //         << " could not reserve vector<> storage for "
+         //         << "strainTensorComponents[("
+         //         << key.first << "," << key.second << ")]"
+         //         << ". Maybe try increasing "
+         //         << "DDInterface::stepsBetweenMeasurements."
+         //         << std::endl;
+         //      return;
+         //   }
+         //}
+         //else
+         //{// strainTensorComponents[key] already contains a vector<double>
+         //   // append an appropriate number of steps to it
+         //   try
+         //   {
+         //      strainTensorComponents[ key].reserve(
+         //            sizeOfMeasurementVector
+         //            );
+         //   }
+         //   catch(const std::exception& e)
+         //   {
+         //      std::cout << "error: ddpy::DDInterface::runGlideSteps()"
+         //         << " could not reserve vector<> storage for "
+         //         << "strainTensorComponents[("
+         //         << key.first << "," << key.second << ")]"
+         //         << ". Maybe try increasing "
+         //         << "DDInterface::stepsBetweenMeasurements."
+         //         << std::endl;
+         //      return;
+         //   }
+         //}
+
+         // collect initial stress and strain components
+         stressTensorComponents[ key]->push_back( //[ measurementNumber]
+            stress( key.first-1, key.second-1) // index from 0, not 1
+            );
+         //strainTensorComponents[ key].push_back( //[ measurementNumber]
+         //   strain( key.first, key.second)
+         //   );
+      } // for ( const auto& key : tensorComponentKeys)
+
+      while ( DC->simulationParameters.runID < endStep)
+      {
+         //measurementNumber += 1;
+         // set end step
+         DC->simulationParameters.Nsteps
+            = DC->simulationParameters.runID + stepsBetweenMeasurements;
+
+         // run DDD steps until reaching the specified end step
+         DC->runGlideSteps();
+         // measurements are collected after each DDD time step
+
+         // append measurements to:
+         //  std::vector<double> times
+         //  std::vector<double> runIDs
+         //  std::map< size_t, // slip system,
+         //     std::vector<double> // time series of data
+         //      slipSystemPlasticDistortion
+         //  std::map<size_t, std::vector< double> > densityPerSlipSystem;
+         //  std::map<size_t, std::vector< double> > stressTensorComponents; //keys:11,22,33,12,13,23
+         //  std::map<size_t, std::vector< double> > strainTensorComponents; //keys:11,22,33,12,13,23
+         // std::vector<std::pair<size_t,size_t> > tensorComponentKeys({11,22,33,12,13,23});
+
+         times->push_back( DC->simulationParameters.totalTime);
+         runIDs->push_back( DC->simulationParameters.runID);
+         //times[ measurementNumber] = DC->simulationParameters.totalTime;
+         //runIDs[ measurementNumber] = DC->simulationParameters.runID;
+
+         // retrieve stress and strain tensors and store their components
+         stress = DC->externalLoadController->stress( VectorDim::Zero());
+         //strain = DC->externalLoadController->strain( VectorDim::Zero());
+         // store stressTensorComponents
+         for ( const auto& key : tensorComponentKeys)//11,22,33,12,13,23
+         {
+            //// check vector bounds
+            //if ( measurementNumber >= stressTensorComponents[ key].size())
+            //{
+            //   std::cout << "error, ddpy::DDInterface::runGlideSteps()"
+            //      << " measurementNumber " << measurementNumber
+            //      << " >= stressTensorComponents[("
+            //      << key.first << "," << key.second << ")].size() "
+            //      << stressTensorComponents[ ss->sID].size()
+            //   return;
+            //}
+            //if ( measurementNumber >= strainTensorComponents[ key].size())
+            //{
+            //   std::cout << "error, ddpy::DDInterface::runGlideSteps()"
+            //      << " measurementNumber " << measurementNumber
+            //      << " >= strainTensorComponents[("
+            //      << key.first << "," << key.second << ")].size() "
+            //      << strainTensorComponents[ ss->sID].size()
+            //   return;
+            //}
+
+            // TODO: consider evaluating and storing resolved shear
+            //        stress and strain, since it will be done anyway
+            //        by getMechanicalMeasurements(), and it would be
+            //        more efficient to return those results as pointers
+
+            // assign values
+            stressTensorComponents[ key]->push_back(
+               stress( key.first-1, key.second-1)
+               );
+            //strainTensorComponents[ key].push_back(
+            //   strain( key.first, key.second)
+            //   );
+            //stressTensorComponents[ key][ measurementNumber]
+            //   = stress( key.first, key.second);
+            //strainTensorComponents[ key][ measurementNumber]
+            //   = strain( key.first, key.second);
+         }
+
+         // std::map<std::pair<int,int>,double> currentSSPD;//key:grainID,ssID
+         currentSSPD = DC->DN->slipSystemPlasticDistortion();
+
+//#ifdef _OPENMP
+//#pragma omp parallel for
+//#endif
+         for ( const auto& ss : grain.second.singleCrystal->slipSystems())
+         {
+            //// check vector bounds
+            //if ( measurementNumber >= densityPerSlipSystem[ ss->sID].size())
+            //{
+            //   std::cout << "error, ddpy::DDInterface::runGlideSteps()"
+            //      << " measurementNumber " << measurementNumber
+            //      << " >= densityPerSlipSystem["
+            //      << ss->sID << "].size() "
+            //      << densityPerSlipSystem[ ss->sID].size()
+            //   return;
+            //}
+
+            //if ( measurementNumber >= slipSystemPlasticDistortion[ ss->sID].size())
+            //{
+            //   std::cout << "error, ddpy::DDInterface::runGlideSteps()"
+            //      << " measurementNumber " << measurementNumber
+            //      << " >= slipSystemPlasticDistortion["
+            //      << ss->sID << "].size() "
+            //      << slipSystemPlasticDistortion[ ss->sID].size()
+            //   return;
+            //}
+
+            // assign initial values to slipSystemPlasticDistortion
+            slipSystemPlasticDistortion[ ss->sID]->push_back(
+               currentSSPD[ std::pair<int,int>( grainID, ss->sID)]
+               );
+
+            //slipSystemPlasticDistortion[ ss->sID][ measurementNumber]
+            //   = currentSSPD[ std::pair<int,int>( grainID, ss->sID)];
+
+            densityPerSlipSystem[ ss->sID]->push_back( 0.0);
+         } // for ( const auto& ss : grain.second.singleCrystal->slipSystems())
+
+         // accumulate density per slip system, initial density skipped
+         for ( const auto& loop : DC->DN->loops())
+         {
+            if ( loop.second.lock()->slipSystem() != nullptr)
+            {
+               for ( const auto& loopLink : loop.second.lock()->loopLinks())
+               {
+                  if ( loopLink->networkLink())
+                  {
+                     if ( ! loopLink->networkLink()->hasZeroBurgers())
+                     {
+                        if (( !loopLink->networkLink()->isBoundarySegment())
+                              &&(!loopLink->networkLink()->isGrainBoundarySegment())
+                           )
+                        {
+                           //densityPerSlipSystem[ ss->sID][ measurementNumber]
+                           densityPerSlipSystem[
+                              loop.second.lock()->slipSystem()->sID
+                           ]->back()
+                              += loopLink->networkLink()->chord().norm()
+                                 /(
+                                  loopLink->networkLink()->loopLinks().size()
+                                  * ddBase->mesh.volume()
+                                  * std::pow( ddBase->poly.b_SI, 2)
+                                  );
+                        }
+                     }
+                  }
+               }
+            }
+         } // accumulated density per slip system, initial density skipped
+      }
+   }
+   else
+   { // if no measurements were enabled, run without interruption
+      // set step to end on
+      DC->simulationParameters.Nsteps
+         = DC->simulationParameters.runID + stepsToRun;
+      DC->runGlideSteps();
+   }
+   return;
+}
+
+std::tuple<
+   //std::vector<double>, // time
+   pybind11::array_t<double, pybind11::array::c_style>, // time
+   //std::vector<size_t>, // runIDs
+   pybind11::array_t<ssize_t, pybind11::array::c_style>, // runIDs
+   std::map< // measurementsMap
+      std::string, // property name
+      std::map<
+         ssize_t, // slip system ID or tensor component index
+         pybind11::array_t<double, pybind11::array::c_style>
+         //std::vector<double>  // time series data
+         >
+      >
+   >
+ddpy::DDInterface::getMechanicalMeasurements()
+{
+   std::map<
+      std::string,
+      std::map< ssize_t,
+         //std::shared_ptr<
+            pybind11::array_t<double, pybind11::array::c_style>
+            //std::vector<double>
+         //   >
+         >
+      >
+      measurements;
+
+   if ( times == nullptr)
+   {
+      times = std::make_shared< std::vector<double> >();
+   }
+   if ( runIDs == nullptr)
+   {
+      runIDs = std::make_shared< std::vector<ssize_t> >();
+   }
+
+   pybind11::array_t<double> timesPy( pybind11::cast( *times)); // TODO: this fails
+   pybind11::array_t<ssize_t> runIDsPy( pybind11::cast( *runIDs));
+
+   if ( DC == nullptr)
+   {
+      std::cout << "error: "
+         << "ddpy::DDInterface::getMechanicalMeasurements()"
+         << " called while DC == nullptr" << std::endl;
+      return std::make_tuple(
+            timesPy,
+            runIDsPy,
+            measurements // map<string,map<size_t,shared_ptr<vector<double>>>>
+            );
+   }
+
+   measurements.try_emplace(
+         "density",
+         std::map<
+               ssize_t,
+               pybind11::array_t< double, pybind11::array::c_style>
+            >()
+         );
+   for ( const auto& [key, value] : densityPerSlipSystem)
+   {
+      //std::cout << "densityPerSlipSystem[" << key << "]:" ;
+      //for (size_t ii=0; ii< value->size(); ++ii)
+      //   std::cout << (*value)[ii] << ",";
+      //std::cout << "moving density of key " << key
+      //   << " with [0]: "
+      //   << (*value)[0] << std::endl; // debug
+
+      // TODO: fix. This is still copying the data, rather than passing its ownership to Python.
+      measurements["density"][ key] = pybind11::cast( *value);
+   }
+
+   measurements.try_emplace(
+         "slipSystemPlasticDistortion",
+         std::map<
+               ssize_t,
+               pybind11::array_t< double, pybind11::array::c_style>
+            >()
+         );
+   for ( const auto& [key, value] : slipSystemPlasticDistortion)
+   {
+      measurements["slipSystemPlasticDistortion"][ key]
+         = pybind11::cast( *value);
+   }
+
+   measurements.try_emplace(
+         "stressTensorComponent",
+         std::map<
+               ssize_t,
+               pybind11::array_t< double, pybind11::array::c_style>
+            >()
+         );
+   for ( const auto& key : tensorComponentKeys)
+   {
+      ssize_t outputKey( key.first * 10 + key.second);
+      measurements[ "stressTensorComponent"].try_emplace(
+            outputKey,
+            pybind11::cast( *(stressTensorComponents[ key]))
+            );
+   }
+
+   //const auto& grain = *(DC->poly.grains.begin());
+   //MatrixDim tmpTensor; // for resolving tensors onto slip systems
+   //// determine quantities indexed by slip system
+   //for ( const auto& ss : grain.second.singleCrystal->slipSystems())
+   //{
+   //   // resolvedStrain
+   //   // evaluate resolved strain for the current slip system at time[ ii]
+
+   //   measurements.try_emplace(
+   //         "resolvedShearStress",
+   //         std::map<size_t, std::vector<double> >);
+   //   measurements["resolvedShearStress"].try_emplace(
+   //         ss->sID,
+   //         std::vector<double>( times.size())
+   //         );
+   //
+   //   //measurements.try_emplace(
+   //   //      "resolvedShearStrain",
+   //   //      std::map<size_t, std::vector<double> >);
+   //   //measurements["resolvedShearStrain"].try_emplace(
+   //   //      ss->sID,
+   //   //      std::vector<double>( times.size())
+   //   //      );
+
+   //   // iterate over time, evaluate resolved shear stress and strain,
+   //   //  and assign them to output variables
+   //   std::pair< size_t, size_t> tmpKey( *(tensorComponentKeys.begin()));
+   //   for ( size_t ii=0; ii < strainTensorComponents[ tmpKey].size(); ++ii)
+   //   {
+   //      // assign tensor components of current time step to a tensor
+   //      for ( const auto& key : tensorComponentKeys)
+   //      {
+   //         tmpTensor( key.first, key.second)
+   //            = strainTensorComponents[ key][ ii];
+   //         if ( key.second != key.first)
+   //         {
+   //            tmpTensor( key.second, key.first)
+   //               = tmpTensor( key.first, key.second);
+   //         }
+   //      }
+   //      // evaluate resolved shear strain
+   //      measurements["resolvedShearStrain"][ ss->sID][ ii]
+   //         = (tmpTensor * (ss->unitNormal)).dot(ss->unitSlip);
+   //   }
+   //   for ( size_t ii=0; ii < stressTensorComponents[ tmpKey].size(); ++ii)
+   //   {
+   //      // assign tensor components of current time step to a tensor
+   //      for ( const auto& key : tensorComponentKeys)
+   //      {
+   //         tmpTensor( key.first, key.second)
+   //            = stressTensorComponents[ key][ ii];
+   //         if ( key.second != key.first)
+   //         {
+   //            tmpTensor( key.second, key.first)
+   //               = tmpTensor( key.first, key.second);
+   //         }
+   //      }
+   //      // evaluate resolved shear stress
+   //      measurements["resolvedShearStress"][ ss->sID][ ii]
+   //         = (tmpTensor * (ss->unitNormal)).dot(ss->unitSlip);
+   //   }
+   //} // for ( const auto& ss : grain.second.singleCrystal->slipSystems())
+   return std::make_tuple(
+         timesPy,
+         runIDsPy,
+         measurements // map<string,map<size_t,vector<double>>>
+         );
+}
+
+void ddpy::DDInterface::clearMechanicalMeasurements()
+{
+   times->clear();
+   times->shrink_to_fit();
+   runIDs->clear();
+   runIDs->shrink_to_fit();
+
+   if ( DC == nullptr)
+   {
+      std::cout << "warning: called "
+         << "ddpy::DDInterface::clearMechanicalMeasurements()"
+         << " while DC == nullptr" << std::endl;
+      return;
+   }
+
+   const auto& grain = *(DC->poly.grains.begin());
+
+   // measurements indexed by slip system IDs
+   for ( const auto& ss : grain.second.singleCrystal->slipSystems())
+   {
+      slipSystemPlasticDistortion[ ss->sID]->clear();
+      slipSystemPlasticDistortion[ ss->sID]->shrink_to_fit();
+      densityPerSlipSystem[ ss->sID]->clear();
+      densityPerSlipSystem[ ss->sID]->shrink_to_fit();
+   }
+
+   // measurements indexed by tensor indices
+   for ( const auto& key : tensorComponentKeys)//11,22,33,12,13,23
+   {
+      stressTensorComponents[ key]->clear();
+      stressTensorComponents[ key]->shrink_to_fit();
+      //strainTensorComponents[ key]->clear();
+      //strainTensorComponents[ key]->shrink_to_fit();
+   }
+
    return;
 }
 
@@ -1359,7 +2077,6 @@ void ddpy::DDInterface::setOutputPath( const std::string& outputPath)
    //   std::cout << "error: defective crystal not yet read" << std::endl;
    //   return;
    //}
-   if ( ddBase == nullptr) readddBase();
    std::cout << "prior evlFolder: "
       << ddBase->simulationParameters.traitsIO.evlFolder << std::endl; // debug
    std::cout << "assigning " << outputPath + "/evl" << " to evlFolder" << std::endl;
@@ -1644,11 +2361,11 @@ PYBIND11_MODULE( ddpy, m) {
             py::kw_only(),
             py::arg( "tag").none(false),
             py::arg( "loopDensitiesPerSlipSystem").none(false),
-            py::arg( "loopSegmentCount").none(false),
-            py::arg( "loopRadiusMean").none(false),
-            py::arg( "loopRadiusStd").none(false)
+            py::arg( "loopSegmentCount").none(false), // keep
+            py::arg( "loopRadiusMean").none(false), // keep
+            py::arg( "loopRadiusStd").none(false) // keep
           )
-      .def("specifyPrismaticLoops",
+      .def("specifyPrismaticLoops", // TODO: implememnt
             &ddpy::DDInterface::specifyPrismaticLoops,
             py::kw_only(),
             py::arg( "tag").none(false),
@@ -1656,7 +2373,7 @@ PYBIND11_MODULE( ddpy, m) {
             py::arg( "prismaticLoopRadii").none(false),
             py::arg( "prismaticLoopCenters").none(false)
           )
-      .def("specifyPrismaticLoopDensity",
+      .def("specifyPrismaticLoopDensity", // TODO: implememnt
             &ddpy::DDInterface::specifyPrismaticLoopDensity,
             py::kw_only(),
             py::arg( "tag").none(false),
@@ -1664,13 +2381,13 @@ PYBIND11_MODULE( ddpy, m) {
             py::arg( "prismaticLoopRadiusMean").none(false),
             py::arg( "prismaticLoopRadiusStd").none(false)
           )
-      .def("specifyPrismaticLoopDensitiesPerSlipSystem",
+      .def("specifyPrismaticLoopDensitiesPerSlipSystem", // TODO: implememnt
             &ddpy::DDInterface::specifyPrismaticLoopDensitiesPerSlipSystem,
             py::kw_only(),
             py::arg( "tag").none(false),
             py::arg( "prismaticLoopDensitiesPerSlipSystem").none(false),
-            py::arg( "prismaticLoopRadiusMean").none(false),
-            py::arg( "prismaticLoopRadiusStd").none(false)
+            py::arg( "prismaticLoopRadiusMean").none(false), // keep
+            py::arg( "prismaticLoopRadiusStd").none(false) // keep
           )
       .def("specifyDipoleDensity",
             &ddpy::DDInterface::specifyDipoleDensity,
@@ -1712,6 +2429,20 @@ PYBIND11_MODULE( ddpy, m) {
             py::arg( "strainRate") = py::none(), // 3x3 matrix
             py::arg( "stiffnessRatio") = py::none() // Voigt format 11 22 33 12 23 13
           )
+      .def("enableMechanicalMeasurements",
+            &ddpy::DDInterface::enableMechanicalMeasurements,
+            py::arg( "stepsBetweenMeasurements") = 1
+          )
+      .def("disableMechanicalMeasurements",
+            &ddpy::DDInterface::disableMechanicalMeasurements
+          )
+      .def("getMechanicalMeasurements", // TODO
+            &ddpy::DDInterface::getMechanicalMeasurements // TODO
+          )
+      .def("clearMechanicalMeasurements", // TODO
+            &ddpy::DDInterface::clearMechanicalMeasurements // TODO
+          )
+
       //.def("getSlipSystemNormals"
       //      &ddpy::DDInterface::getSlipSystemNormals
       //    )
