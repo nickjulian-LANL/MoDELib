@@ -908,6 +908,18 @@ void ddpy::DDInterface::runGlideSteps( const size_t& stepsToRun)
                }
             }
          }
+         else
+         {
+               std::cout
+                  << "warning: loop.second.lock()->slipSystem() == nullptr"
+                  << "loop.second.lock()->tag(): "
+                  << loop.second.lock()->tag()<< std::endl
+                  << "loop.second.lock()->glidePlane: "
+                  << loop.second.lock()->glidePlane << std::endl
+                  << "loop.second.lock()->slippedArea(): "
+                  << loop.second.lock()->slippedArea() << std::endl
+                  << std::endl;
+         }
       } // accumulated density per slip system, initial density skipped
 
       // allocate stressTensorComponents // and strainTensorComponents
@@ -1023,7 +1035,11 @@ void ddpy::DDInterface::runGlideSteps( const size_t& stepsToRun)
 
          // run DDD steps until reaching the specified end step
          DC->runGlideSteps();
-         // measurements are collected after each DDD time step
+         DC->DN->updateGeometry();
+         // ??updateLoadControllers(simulationParamerters.runID, false);
+         // measurements are collected after each DDD time step, but
+         //  runGlideSteps() leaves the data in need of updating, hence
+         //  the need to run updateGeometry()
 
          // append measurements to:
          //  std::vector<double> times
