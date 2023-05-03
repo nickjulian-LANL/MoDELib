@@ -308,16 +308,16 @@ void ddpy::DDInterface::setCurrentStep( const long int& step)
 void ddpy::DDInterface::setExternalLoad(
       std::optional< const pybind11::array_t<double,
          pybind11::array::c_style | pybind11::array::forcecast>>&
-            ExternalStress0In, // 3x3 matrix
+            ExternalStress0In, // 3x3 matrix [Pa]
       std::optional< const pybind11::array_t<double,
          pybind11::array::c_style | pybind11::array::forcecast>>&
-            ExternalStressRateIn, // 3x3 matrix
+            ExternalStressRateIn, // 3x3 matrix [Pa/s]
       std::optional< const pybind11::array_t<double,
          pybind11::array::c_style | pybind11::array::forcecast>>&
-            ExternalStrain0In, // 3x3 matrix
+            ExternalStrain0In, // 3x3 matrix [%]
       std::optional< const pybind11::array_t<double,
          pybind11::array::c_style | pybind11::array::forcecast>>&
-            ExternalStrainRateIn, // 3x3 matrix
+            ExternalStrainRateIn, // 3x3 matrix [s^-1]
       std::optional< const pybind11::array_t<double,
          pybind11::array::c_style | pybind11::array::forcecast>>&
             MachineStiffnessRatioIn // Voigt format 11 22 33 12 23 13
@@ -356,6 +356,7 @@ void ddpy::DDInterface::setExternalLoad(
 
    // Adapting calculations from UniformExternalLoadController constructor
 
+   //TODO: convert values from SI to modelib's unitless units
    // read and assign ExternalStressRate if it was specified
    if ( ExternalStressRateIn.has_value())
    {
@@ -364,7 +365,9 @@ void ddpy::DDInterface::setExternalLoad(
          for ( ssize_t jj=0; jj < ExternalStressRateIn.value().shape()[1]; ++jj)
          {
             DC->externalLoadController->ExternalStressRate( ii, jj)
-               = ExternalStressRateInBuf( ii, jj);
+               = ExternalStressRateInBuf( ii, jj) // [Pa/s]
+                  * DC->poly.b_SI/DC->poly.cs_SI  // [m/(m/s)]
+                  / DC->poly.mu_SI; // [Pa]
          }
       assert((
          DC->externalLoadController->ExternalStressRate
@@ -381,7 +384,8 @@ void ddpy::DDInterface::setExternalLoad(
          for ( ssize_t jj=0; jj < ExternalStrainRateIn.value().shape()[1]; ++jj)
          {
             DC->externalLoadController->ExternalStrainRate( ii, jj)
-               = ExternalStrainRateInBuf( ii, jj);
+               = ExternalStrainRateInBuf( ii, jj) // [s^-1]
+                  * DC->poly.b_SI/DC->poly.cs_SI;  // [m/(m/s)]
          }
       assert((
                DC->externalLoadController->ExternalStrainRate
@@ -431,7 +435,7 @@ void ddpy::DDInterface::setExternalLoad(
          for ( ssize_t jj=0; jj < ExternalStrain0In.value().shape()[1]; ++jj)
          {
             DC->externalLoadController->ExternalStrain( ii, jj)
-               = ExternalStrain0InBuf( ii, jj);
+               = ExternalStrain0InBuf( ii, jj); // [%]
          }
       assert(
                ( DC->externalLoadController->ExternalStrain
@@ -452,8 +456,8 @@ void ddpy::DDInterface::setExternalLoad(
       for ( ssize_t ii=0; ii < ExternalStress0In.value().shape()[0]; ++ii)
          for ( ssize_t jj=0; jj < ExternalStress0In.value().shape()[1]; ++jj)
          {
-            DC->externalLoadController->ExternalStress( ii, jj)
-               = ExternalStress0InBuf( ii, jj);
+            DC->externalLoadController->ExternalStress( ii, jj) // unitless
+               = ExternalStress0InBuf( ii, jj) / DC->poly.mu_SI;
          }
       assert(
                (
@@ -700,11 +704,12 @@ void ddpy::DDInterface::runGlideSteps( const size_t& stepsToRun)
 
       // allocate and initiate temporary storage for measured quantities
       std::map<std::pair<int,int>,double> currentSSPD;//key:grainID,ssID
-      currentSSPD = DC->DN->slipSystemPlasticDistortion();
+      currentSSPD = DC->DN->slipSystemPlasticDistortion(); // unitless
       //MatrixDim strain
       //   = DC->externalLoadController->strain( VectorDim::Zero());
-      MatrixDim stress
-         = DC->externalLoadController->stress( VectorDim::Zero());
+      MatrixDim stress // units: [DC->poly.mu_SI [Pa]]
+         = DC->externalLoadController->stress( VectorDim::Zero())
+            * DC->poly.mu_SI; // [Pa]
 
       //// ensure times, runIDs and measured quantity vectors have same size
       //if ( times.size() != runIDs.size())
@@ -770,7 +775,8 @@ void ddpy::DDInterface::runGlideSteps( const size_t& stepsToRun)
          return;
       }
 
-      times->push_back( DC->simulationParameters.totalTime);
+      times->push_back( DC->simulationParameters.totalTime
+            * (( DC->poly.b_SI)/( DC->poly.cs_SI))); // [sec]
       runIDs->push_back( DC->simulationParameters.runID);
       //times[ measurementNumber] = DC->simulationParameters.totalTime;
       //runIDs[ measurementNumber] = DC->simulationParameters.runID;
@@ -873,7 +879,7 @@ void ddpy::DDInterface::runGlideSteps( const size_t& stepsToRun)
          }
 
          slipSystemPlasticDistortion[ ss->sID]->push_back(
-            currentSSPD[ std::pair<int,int>( grainID, ss->sID)]
+            currentSSPD[ std::pair<int,int>( grainID, ss->sID)] //unitless
             );
 
       } // for ( const auto& ss : grain.second.singleCrystal->slipSystems())
@@ -900,9 +906,9 @@ void ddpy::DDInterface::runGlideSteps( const size_t& stepsToRun)
                            += loopLink->networkLink()->chord().norm()
                               /(
                                loopLink->networkLink()->loopLinks().size()
-                               * ddBase->mesh.volume()
-                               * std::pow( ddBase->poly.b_SI, 2)
-                               );
+                               * ddBase->mesh.volume() // [b^3]
+                               * std::pow( ddBase->poly.b_SI, 2) //[m^2/b^2]
+                               ); // [m^-2];
                      }
                   }
                }
@@ -1052,13 +1058,17 @@ void ddpy::DDInterface::runGlideSteps( const size_t& stepsToRun)
          //  std::map<size_t, std::vector< double> > strainTensorComponents; //keys:11,22,33,12,13,23
          // std::vector<std::pair<size_t,size_t> > tensorComponentKeys({11,22,33,12,13,23});
 
-         times->push_back( DC->simulationParameters.totalTime);
+         times->push_back( DC->simulationParameters.totalTime
+                  * ( DC->poly.b_SI)/(DC->poly.cs_SI)
+               );
          runIDs->push_back( DC->simulationParameters.runID);
          //times[ measurementNumber] = DC->simulationParameters.totalTime;
          //runIDs[ measurementNumber] = DC->simulationParameters.runID;
 
          // retrieve stress and strain tensors and store their components
-         stress = DC->externalLoadController->stress( VectorDim::Zero());
+         stress = DC->externalLoadController->stress( VectorDim::Zero())
+                  * DC->poly.mu_SI; // [Pa]
+
          //strain = DC->externalLoadController->strain( VectorDim::Zero());
          // store stressTensorComponents
          for ( const auto& key : tensorComponentKeys)//11,22,33,12,13,23
@@ -1090,7 +1100,7 @@ void ddpy::DDInterface::runGlideSteps( const size_t& stepsToRun)
 
             // assign values
             stressTensorComponents[ key]->push_back(
-               stress( key.first-1, key.second-1)
+               stress( key.first-1, key.second-1) // [Pa]
                );
             //strainTensorComponents[ key].push_back(
             //   strain( key.first, key.second)
@@ -1102,7 +1112,7 @@ void ddpy::DDInterface::runGlideSteps( const size_t& stepsToRun)
          }
 
          // std::map<std::pair<int,int>,double> currentSSPD;//key:grainID,ssID
-         currentSSPD = DC->DN->slipSystemPlasticDistortion();
+         currentSSPD = DC->DN->slipSystemPlasticDistortion(); // unitless
 
 //#ifdef _OPENMP
 //#pragma omp parallel for
@@ -1133,12 +1143,12 @@ void ddpy::DDInterface::runGlideSteps( const size_t& stepsToRun)
             // assign initial values to slipSystemPlasticDistortion
             slipSystemPlasticDistortion[ ss->sID]->push_back(
                currentSSPD[ std::pair<int,int>( grainID, ss->sID)]
-               );
+               ); // unitless
 
             //slipSystemPlasticDistortion[ ss->sID][ measurementNumber]
             //   = currentSSPD[ std::pair<int,int>( grainID, ss->sID)];
 
-            densityPerSlipSystem[ ss->sID]->push_back( 0.0);
+            densityPerSlipSystem[ ss->sID]->push_back( 0.0); // [m^{-2}]
          } // for ( const auto& ss : grain.second.singleCrystal->slipSystems())
 
          // accumulate density per slip system, initial density skipped
@@ -1160,12 +1170,12 @@ void ddpy::DDInterface::runGlideSteps( const size_t& stepsToRun)
                            densityPerSlipSystem[
                               loop.second.lock()->slipSystem()->sID
                            ]->back()
-                              += loopLink->networkLink()->chord().norm()
+                              += loopLink->networkLink()->chord().norm()//[b]
                                  /(
                                   loopLink->networkLink()->loopLinks().size()
-                                  * ddBase->mesh.volume()
-                                  * std::pow( ddBase->poly.b_SI, 2)
-                                  );
+                                  * ddBase->mesh.volume() // [b^3]
+                                  * std::pow( ddBase->poly.b_SI, 2)//[m^2/b^2]
+                                  );// [m^{-2}]
                         }
                      }
                   }
@@ -1280,72 +1290,66 @@ ddpy::DDInterface::getMechanicalMeasurements()
       ssize_t outputKey( key.first * 10 + key.second);
       measurements[ "stressTensorComponent"].try_emplace(
             outputKey,
-            pybind11::cast( *(stressTensorComponents[ key]))
+            pybind11::cast( *(stressTensorComponents[ key])) // [Pa]
             );
    }
 
-   //const auto& grain = *(DC->poly.grains.begin());
-   //MatrixDim tmpTensor; // for resolving tensors onto slip systems
-   //// determine quantities indexed by slip system
-   //for ( const auto& ss : grain.second.singleCrystal->slipSystems())
-   //{
-   //   // resolvedStrain
-   //   // evaluate resolved strain for the current slip system at time[ ii]
+   const auto& grain = *(DC->poly.grains.begin());
+   MatrixDim tmpTensor; // for resolving tensors onto slip systems
+   std::shared_ptr< std::vector< double> > rss;
+   // determine quantities indexed by slip system
+   for ( const auto& ss : grain.second.singleCrystal->slipSystems())
+   {
+      // resolvedStrain
+      // evaluate resolved strain for the current slip system at time[ ii]
 
-   //   measurements.try_emplace(
-   //         "resolvedShearStress",
-   //         std::map<size_t, std::vector<double> >);
-   //   measurements["resolvedShearStress"].try_emplace(
-   //         ss->sID,
-   //         std::vector<double>( times.size())
-   //         );
-   //
-   //   //measurements.try_emplace(
-   //   //      "resolvedShearStrain",
-   //   //      std::map<size_t, std::vector<double> >);
-   //   //measurements["resolvedShearStrain"].try_emplace(
-   //   //      ss->sID,
-   //   //      std::vector<double>( times.size())
-   //   //      );
+      measurements.try_emplace(
+            "resolvedShearStress",
+            std::map<
+                  ssize_t,
+                  pybind11::array_t< double, pybind11::array::c_style>
+               >()
+            );
+      //measurements["resolvedShearStress"].try_emplace(
+      //      ss->sID,
+      //      //std::make_shared< std::vector<double> >( times->size())
+      //      );
+      ////measurements["resolvedShearStress"][ ss->sID]->reserve( times->size());
+      rss = std::make_shared< std::vector< double> >();// times->size());
+      rss->reserve( times->size());
 
-   //   // iterate over time, evaluate resolved shear stress and strain,
-   //   //  and assign them to output variables
-   //   std::pair< size_t, size_t> tmpKey( *(tensorComponentKeys.begin()));
-   //   for ( size_t ii=0; ii < strainTensorComponents[ tmpKey].size(); ++ii)
-   //   {
-   //      // assign tensor components of current time step to a tensor
-   //      for ( const auto& key : tensorComponentKeys)
-   //      {
-   //         tmpTensor( key.first, key.second)
-   //            = strainTensorComponents[ key][ ii];
-   //         if ( key.second != key.first)
-   //         {
-   //            tmpTensor( key.second, key.first)
-   //               = tmpTensor( key.first, key.second);
-   //         }
-   //      }
-   //      // evaluate resolved shear strain
-   //      measurements["resolvedShearStrain"][ ss->sID][ ii]
-   //         = (tmpTensor * (ss->unitNormal)).dot(ss->unitSlip);
-   //   }
-   //   for ( size_t ii=0; ii < stressTensorComponents[ tmpKey].size(); ++ii)
-   //   {
-   //      // assign tensor components of current time step to a tensor
-   //      for ( const auto& key : tensorComponentKeys)
-   //      {
-   //         tmpTensor( key.first, key.second)
-   //            = stressTensorComponents[ key][ ii];
-   //         if ( key.second != key.first)
-   //         {
-   //            tmpTensor( key.second, key.first)
-   //               = tmpTensor( key.first, key.second);
-   //         }
-   //      }
-   //      // evaluate resolved shear stress
-   //      measurements["resolvedShearStress"][ ss->sID][ ii]
-   //         = (tmpTensor * (ss->unitNormal)).dot(ss->unitSlip);
-   //   }
-   //} // for ( const auto& ss : grain.second.singleCrystal->slipSystems())
+      // iterate over time, evaluate resolved shear stress and strain,
+      //  and assign them to output variables
+      std::pair< size_t, size_t> tmpKey( *(tensorComponentKeys.begin()));
+      for ( size_t tt=0; tt < stressTensorComponents[ tmpKey]->size(); ++tt)
+      {
+         // assign tensor components of current time step to a tensor
+         for ( const auto& key : tensorComponentKeys)
+         {
+            tmpTensor( key.first-1, key.second-1)
+               = (*(stressTensorComponents[ key]))[ tt]; // [Pa]
+            if ( key.second != key.first)
+            {
+               tmpTensor( key.second-1, key.first-1)
+                  = tmpTensor( key.first-1, key.second-1);
+            }
+         }
+         // evaluate resolved shear stress
+         //(*(measurements["resolvedShearStress"][ ss->sID]))[ tt]
+         rss->push_back(
+               (
+                  tmpTensor * ( // [Pa]
+                     ss->unitNormal // [b] or unitless ?
+                     //   * ddBase->poly.b_SI // [m/b]
+                     ) //[Pa m] or [Pa] ?
+               ).dot( ss->unitSlip // [b] or unitless ?
+                  //* ( ddBase->poly.b_SI // [m/b]
+                  //   )
+                  )); // [Pa]
+      }
+      measurements[ "resolvedShearStress"][ ss->sID]
+         = pybind11::cast( *rss);
+   } // for ( const auto& ss : grain.second.singleCrystal->slipSystems())
    return std::make_tuple(
          timesPy,
          runIDsPy,

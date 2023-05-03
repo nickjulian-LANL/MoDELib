@@ -33,11 +33,16 @@ def singleModelib():
     #hiRateSteps = 300
     #lowRateSteps = 1000
     hiRateSteps = 300
-    lowRateSteps = 30000
+    zeroRateSteps = 300
+    lowRateSteps = 3000
+    #lowRateSteps = 3000
     measurementPeriod = 1
-    evlOutputPeriod1 = 300
-    evlOutputPeriod2 = 1000
-    smoothingWindowTimePeriod = 1000.0
+    evlOutputPeriod1 = 10
+    #evlOutputPeriod1 = 300
+    evlOutputPeriod2 = 10
+    #smoothingWindowTimePeriod = 1.0
+    smoothingWindowTimePeriod = 5.0e-9
+    #smoothingWindowTimePeriod = 1.0e-14
     #smoothingWindowTimePeriod = 700.0
     dddFolderPath = "./testSerialRuns-allSlipSystems"#contains inputFiles/{DD.txt,mesh,load,material}
     lattice = 'bcc' # TODO: read crystalStructure from {material}.txt
@@ -129,8 +134,10 @@ def singleModelib():
     #periodicLoopRadiusDistributionStd = 2.0e-8
     #periodicLoopTargetDensity = 1e13
     periodicLoopSegmentCount = 50
-    periodicLoopRadiusDistributionMean = 1.0e-7
+    periodicLoopRadiusDistributionMean = 1.0e-6
     periodicLoopRadiusDistributionStd = 1.0e-8
+    #periodicLoopRadiusDistributionMean = 1.0e-7
+    #periodicLoopRadiusDistributionStd = 1.0e-8
     loopDensitiesPerSlipSystem \
             = {
                     0:1.0e0,
@@ -170,6 +177,16 @@ def singleModelib():
     #print(f"loopIdx:{loopIdx}, parameterLog:\n{parameterLog}")
     print("dc.clearMicrostructureSpecifications()")
     dc.clearMicrostructureSpecifications()
+
+    #print("dc.specifyPrismaticLoopDensityPerSlipSystem()")
+    #dc.specifyPrismaticLoopDensitiesPerSlipSystem(
+    #        tag=tag,
+    #        prismaticLoopDensitiesPerSlipSystem=loopDensitiesPerSlipSystem,
+    #        #loopSegmentCount=periodicLoopSegmentCount,
+    #        prismaticLoopRadiusMean=periodicLoopRadiusDistributionMean,
+    #        prismaticLoopRadiusStd=periodicLoopRadiusDistributionStd
+    #        )
+
     print("dc.specifyLoopDensityPerSlipSystem()")
     dc.specifyLoopDensitiesPerSlipSystem(
             tag=tag,
@@ -178,6 +195,8 @@ def singleModelib():
             loopRadiusMean=periodicLoopRadiusDistributionMean,
             loopRadiusStd=periodicLoopRadiusDistributionStd
             )
+
+
     #print("dc.specifyLoopDensity()")
     #dc.specifyLoopDensity(
     #        tag=tag,
@@ -198,48 +217,101 @@ def singleModelib():
         dc.setOutputFrequency( evlOutputPeriod1)
 
         # attempt to change the external load applied
-        strain \
-            = np.array([
-                [0,0,0],
-                [0,0.0,0],
-                [0,0,0]],dtype=np.float64)
+        #strain \
+        #    = np.array([
+        #        [0,0,0],
+        #        [0,0.0,0],
+        #        [0,0,0]],dtype=np.float64)
+        #strainRate \
+        #    = np.array([
+        #        [0,0,0],
+        #        #[0,1.0e-5,0],
+        #        [0,1.0e-12,0],
+        #        [0,0,0]],dtype=np.float64)
+        #stress \
+        #    = np.array([
+        #        [0,0,0],
+        #        [0,0,0],
+        #        [0,0,0]],dtype=np.float64)
+        #stressRate \
+        #    = np.array([
+        #        [0.0,0.0,0.0],
+        #        [0.0,0.0,0.0],
+        #        [0.0,0.0,0.0]],dtype=np.float64)
+        #stiffnessRatio \
+        #    = np.array([0,1.0e20,0,0,0,0],dtype=np.float64)
+
+        #dc.setExternalLoad(
+        #        strain=strain,
+        #        strainRate=strainRate,
+        #        stress=stress,
+        #        stressRate=stressRate,
+        #        stiffnessRatio=stiffnessRatio
+        #        )
+
+        #parameterLog[ tag]['strainRate1'] = strainRate
+        #try:
+        #    print(f"trying to write parameterLog[{tag}]")
+        #    with open(outputFolder + "/parameterLog.pkl", 'wb') as handle:
+        #        pickle.dump(
+        #                parameterLog,
+        #                handle,
+        #                protocol=pickle.HIGHEST_PROTOCOL
+        #                )
+        #except:
+        #    print(f"error: failed to write parameterLog.pkl")
+
+
+        #dc.disableMechanicalMeasurements()
+        #dc.runGlideSteps( hiRateSteps)
+
+        #print(f"dc.writeConfigToTxt()")
+        #dc.writeConfigToTxt()
+
+        #####
+        #strainRate \
+        #    = np.array([
+        #        [0,0,0],
+        #        [0,0,0],
+        #        [0,0,0]],dtype=np.float64)
+        #dc.setExternalLoad(
+        #        strainRate=strainRate,
+        #        )
+        #print(f"dc.enableMechanicalMeasurements({measurementPeriod})")
+        #dc.enableMechanicalMeasurements( measurementPeriod)
+
+        #print(f"dc.setOutputFrequency({evlOutputPeriod2})")
+        #dc.setOutputFrequency( evlOutputPeriod2)
+
+        #print(f"dc.runGlideSteps({zeroRateSteps})")
+        #dc.runGlideSteps( zeroRateSteps)
+
+        #print(f"dc.writeConfigToTxt()")
+        #dc.writeConfigToTxt()
+        #####
+        #print(f"dc.writeConfigToTxt()")
+        #dc.writeConfigToTxt()
+
         strainRate \
             = np.array([
                 [0,0,0],
-                [0,1.0e-5,0],
+                #[0,1.0e-7,0],
+                #[0,1.0e-12,0],
+                [0,1.0e-4,0],
                 [0,0,0]],dtype=np.float64)
-        stress \
-            = np.array([
-                [0,0,0],
-                [0,0,0],
-                [0,0,0]],dtype=np.float64)
-        stressRate \
-            = np.array([
-                [0.0,0.0,0.0],
-                [0.0,0.0,0.0],
-                [0.0,0.0,0.0]],dtype=np.float64)
-        stiffnessRatio \
-            = np.array([0,1.0e20,0,0,0,0],dtype=np.float64)
 
-        dc.setExternalLoad(
-                strain=strain,
-                strainRate=strainRate,
-                stress=stress,
-                stressRate=stressRate,
-                stiffnessRatio=stiffnessRatio
-                )
+        parameterLog[ tag]['strainRate2'] = strainRate
+        try:
+            print(f"trying to write parameterLog[{tag}]")
+            with open(outputFolder + "/parameterLog.pkl", 'wb') as handle:
+                pickle.dump(
+                        parameterLog,
+                        handle,
+                        protocol=pickle.HIGHEST_PROTOCOL
+                        )
+        except:
+            print(f"error: failed to write parameterLog.pkl")
 
-        dc.disableMechanicalMeasurements()
-        dc.runGlideSteps( hiRateSteps)
-
-        print(f"dc.writeConfigToTxt()")
-        dc.writeConfigToTxt()
-
-        strainRate \
-            = np.array([
-                [0,0,0],
-                [0,1.0e-5,0],
-                [0,0,0]],dtype=np.float64)
         dc.setExternalLoad(
                 strainRate=strainRate,
                 )
@@ -495,8 +567,8 @@ def create_measurement_plots(
     outputFolder):
 
     fig, ax = plt.subplots(1,1, figsize=(4,4))
-    ax.set_xlabel('time')
-    ax.set_ylabel('strainRates')
+    ax.set_xlabel('time [s]')
+    ax.set_ylabel(r'strainRates [s$^{-1}$]')
     for ssID in strainRates.keys():
         ax.plot( measurementTimes[1:], strainRates[ ssID], alpha=0.5)
     plt.tight_layout()
@@ -505,8 +577,8 @@ def create_measurement_plots(
 
     for ssID in strainRates.keys():
         fig, ax = plt.subplots(1,1, figsize=(4,4))
-        ax.set_xlabel('time')
-        ax.set_ylabel('strainRates')
+        ax.set_xlabel('time [s]')
+        ax.set_ylabel(r'strainRates [s$^{-1}$]')
         ax.plot( measurementTimes[1:], smoothedStrainRates[ ssID], alpha=0.5, label='smoothed')
         ax.plot( measurementTimes[1:], strainRates[ ssID], alpha=0.5, label='raw')
         ax.legend( loc="best", framealpha=0.0)
@@ -515,8 +587,8 @@ def create_measurement_plots(
         plt.close()
 
     fig, ax = plt.subplots(1,1, figsize=(4,4))
-    ax.set_xlabel('time')
-    ax.set_ylabel('smoothedStrainRates')
+    ax.set_xlabel('time [s]')
+    ax.set_ylabel(r'smoothedStrainRates [s$^{-1}$]')
     for ssID in strainRates.keys():
         ax.plot( measurementTimes[1:], smoothedStrainRates[ ssID], alpha=0.5, label='smoothed')
     plt.tight_layout()
@@ -525,8 +597,8 @@ def create_measurement_plots(
 
     for ssID in measuredProperties['density'].keys():
         fig, ax = plt.subplots(1,1, figsize=(4,4))
-        ax.set_xlabel('resolvedShearStress')
-        ax.set_ylabel('strainRate')
+        ax.set_xlabel('resolvedShearStress [Pa]')
+        ax.set_ylabel(r'smoothedStrainRate [s$^{-1}$]')
         ax.plot(
                 measuredProperties['resolvedShearStress'][ ssID][1:],
                 smoothedStrainRates[ ssID],
@@ -536,8 +608,8 @@ def create_measurement_plots(
         plt.close()
 
     fig, ax = plt.subplots(1,1, figsize=(4,4))
-    ax.set_xlabel('resolvedShearStress')
-    ax.set_ylabel('strainRate')
+    ax.set_xlabel('resolvedShearStress [Pa]')
+    ax.set_ylabel(r'smoothedStrainRate [s$^{-1}$]')
     for ssID in measuredProperties['density'].keys():
         ax.plot(
                 measuredProperties['resolvedShearStress'][ ssID][1:],
@@ -550,16 +622,16 @@ def create_measurement_plots(
 
     for ssID in measuredProperties['density'].keys():
         fig, ax = plt.subplots(1,1, figsize=(4,4))
-        ax.set_xlabel('time')
-        ax.set_ylabel('density')
+        ax.set_xlabel('time [s]')
+        ax.set_ylabel(r'density [m$^{-2}$]')
         ax.plot( measurementTimes, measuredProperties['density'][ ssID], alpha=0.5)
         plt.tight_layout()
         plt.savefig(outputFolder + "/time_density_" + str(ssID) + ".png")
         plt.close()
 
     fig, ax = plt.subplots(1,1, figsize=(4,4))
-    ax.set_xlabel('time')
-    ax.set_ylabel('density')
+    ax.set_xlabel('time [s]')
+    ax.set_ylabel(r'density [m$^{-2}$]')
     for ssID in measuredProperties['density'].keys():
         ax.plot( measurementTimes, measuredProperties['density'][ ssID], alpha=0.5)
     plt.tight_layout()
@@ -567,11 +639,9 @@ def create_measurement_plots(
     plt.close()
 
     fig, ax = plt.subplots(1,1, figsize=(4,4))
-    ax.set_xlabel('density')
-    ax.set_ylabel('strainRate')
+    ax.set_xlabel(r'density [m$^{-2}$]')
+    ax.set_ylabel(r'strainRate [s$^{-1}$]')
     for ssID in strainRates.keys():
-        #ax.plot( measuredProperties['density'][ ssID][1:],
-        #        smoothedStrainRates[ ssID], alpha=0.5, label='smoothed')
         ax.plot( measuredProperties['density'][ ssID][1:],
                 strainRates[ ssID], alpha=0.5, label='raw')
     plt.tight_layout()
@@ -579,21 +649,29 @@ def create_measurement_plots(
     plt.close()
 
     fig, ax = plt.subplots(1,1, figsize=(4,4))
-    ax.set_xlabel('density')
-    ax.set_ylabel('smoothedStrainRate')
+    ax.set_xlabel(r'density [m$^{-2}$]')
+    ax.set_ylabel(r'smoothedStrainRate [s$^{-1}$]')
     for ssID in strainRates.keys():
         ax.plot( measuredProperties['density'][ ssID][1:],
                 smoothedStrainRates[ ssID], alpha=0.5, label='smoothed')
-        #ax.plot( measuredProperties['density'][ ssID][1:],
-        #        strainRates[ ssID], alpha=0.5, label='raw')
     plt.tight_layout()
     plt.savefig(outputFolder + "/density_smoothStrainRates" + ".png")
     plt.close()
 
+    fig, ax = plt.subplots(1,1, figsize=(4,4))
+    ax.set_xlabel(r'totalDensity [m$^{-2}$]')
+    ax.set_ylabel(r'smoothedStrainRate [s$^{-1}$]')
+    for ssID in strainRates.keys():
+        ax.plot( totalDensity[1:],
+                smoothedStrainRates[ ssID], alpha=0.5, label='smoothed')
+    plt.tight_layout()
+    plt.savefig(outputFolder + "/totalDensity_smoothStrainRates" + ".png")
+    plt.close()
+
     for ssID in strainRates.keys():
         fig, ax = plt.subplots(1,1, figsize=(4,4))
-        ax.set_xlabel('density')
-        ax.set_ylabel('strainRate')
+        ax.set_xlabel(r'density [m$^{-2}$]')
+        ax.set_ylabel(r'strainRate [s$^{-1}$]')
         ax.plot( measuredProperties['density'][ ssID][1:],
                 smoothedStrainRates[ ssID], alpha=0.5, label='smoothed')
         ax.plot( measuredProperties['density'][ ssID][1:], strainRates[ ssID], alpha=0.5, label='raw')
@@ -604,8 +682,8 @@ def create_measurement_plots(
 
 
     fig, ax = plt.subplots(1,1, figsize=(4,4))
-    ax.set_xlabel('time')
-    ax.set_ylabel('totalDensity')
+    ax.set_xlabel('time [s]')
+    ax.set_ylabel(r'totalDensity [m$^{-2}$]')
     ax.plot( measurementTimes, totalDensity)
     plt.tight_layout()
     plt.savefig( outputFolder + "/time_totalDensity.png")
@@ -619,7 +697,7 @@ def create_measurement_plots(
     #    )
 
     fig, ax = plt.subplots(1,1, figsize=(4,4))
-    ax.set_xlabel('time')
+    ax.set_xlabel('time [s]')
     ax.set_ylabel('plasticDistortion')
     for ii in measuredProperties['slipSystemPlasticDistortion'].keys(): # keys are ssID
         ax.plot( measurementTimes, measuredProperties['slipSystemPlasticDistortion'][ii], alpha=0.5)
@@ -628,26 +706,48 @@ def create_measurement_plots(
     plt.close()
 
     fig, ax = plt.subplots(1,1, figsize=(4,4))
-    ax.set_xlabel('time')
-    ax.set_ylabel('resolvedShearStress')
+    ax.set_xlabel('time [s]')
+    ax.set_ylabel('resolvedShearStress [Pa]')
     for ii in measuredProperties['resolvedShearStress'].keys(): # keys are ssID
         ax.plot( measurementTimes, measuredProperties['resolvedShearStress'][ii], alpha=0.5)
     plt.tight_layout()
-    plt.savefig(outputFolder + "/time_resolvedShearStress.png")
+    plt.savefig(outputFolder + "/time_resolvedShearStresses.png")
     plt.close()
+
+    for ii in measuredProperties['resolvedShearStress'].keys(): # keys are ssID
+        fig, ax = plt.subplots(1,1, figsize=(4,4))
+        ax.set_xlabel('time [s]')
+        ax.set_ylabel('resolvedShearStress [Pa]')
+        ax.plot( measurementTimes, measuredProperties['resolvedShearStress'][ii], alpha=0.5)
+        plt.tight_layout()
+        plt.savefig(outputFolder + "/time_resolvedShearStress_" + str(ii) + ".png")
+        plt.close()
+
 
     fig, ax = plt.subplots(1,1, figsize=(4,4))
     ax.set_xlabel('plasticDistortion')
-    ax.set_ylabel('resolvedShearStress')
+    ax.set_ylabel('resolvedShearStress [Pa]')
     for ii in measuredProperties['resolvedShearStress'].keys(): # keys are ssID
         ax.plot(  measuredProperties['slipSystemPlasticDistortion'][ii], measuredProperties['resolvedShearStress'][ii], alpha=0.5)
     plt.tight_layout()
-    plt.savefig(outputFolder + "/plastiDistortion_resolvedShearStress.png")
+    plt.savefig(outputFolder + "/plasticDistortion_resolvedShearStresses.png")
     plt.close()
+
+    for ii in measuredProperties['resolvedShearStress'].keys(): # keys are ssID
+        fig, ax = plt.subplots(1,1, figsize=(4,4))
+        ax.set_xlabel('|plasticDistortion|')
+        ax.set_ylabel('|resolvedShearStress| [Pa]')
+        ax.plot(
+            np.abs(measuredProperties['slipSystemPlasticDistortion'][ii]),
+            np.abs(measuredProperties['resolvedShearStress'][ii]),
+            alpha=0.5)
+        plt.tight_layout()
+        plt.savefig(outputFolder + "/plasticDistortion_resolvedShearStress_" + str(ii) + ".png")
+        plt.close()
 
 
     fig, ax = plt.subplots(1,1, figsize=(4,4))
-    ax.set_xlabel('totalDensity')
+    ax.set_xlabel(r'totalDensity [m$^{-2}$]')
     ax.set_ylabel('plasticDistortion')
     for ii in measuredProperties['slipSystemPlasticDistortion'].keys():
         ax.plot(
@@ -659,7 +759,7 @@ def create_measurement_plots(
     plt.close()
 
     fig, ax = plt.subplots(1,1, figsize=(4,4))
-    ax.set_xlabel('density')
+    ax.set_xlabel(r'density [m$^{-2}$]')
     ax.set_ylabel('plasticDistortion')
     for ii in measuredProperties['slipSystemPlasticDistortion'].keys():
         ax.plot(
