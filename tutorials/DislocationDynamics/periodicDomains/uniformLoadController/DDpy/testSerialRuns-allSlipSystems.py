@@ -34,12 +34,13 @@ def singleModelib():
     #lowRateSteps = 1000
     hiRateSteps = 300
     zeroRateSteps = 300
-    lowRateSteps = 3000
+    lowRateSteps = 100000
     #lowRateSteps = 3000
+    stepsBetweenMeasurements = 1000 # steps
     measurementPeriod = 1
-    evlOutputPeriod1 = 10
+    evlOutputPeriod1 = 100
     #evlOutputPeriod1 = 300
-    evlOutputPeriod2 = 10
+    evlOutputPeriod2 = 100
     #smoothingWindowTimePeriod = 1.0
     smoothingWindowTimePeriod = 5.0e-9
     #smoothingWindowTimePeriod = 1.0e-14
@@ -295,12 +296,10 @@ def singleModelib():
         strainRate \
             = np.array([
                 [0,0,0],
-                #[0,1.0e-7,0],
-                #[0,1.0e-12,0],
-                [0,1.0e-4,0],
+                [0,1.0e+3,0], # [%/s]
                 [0,0,0]],dtype=np.float64)
 
-        parameterLog[ tag]['strainRate2'] = strainRate
+        parameterLog[ tag]['strainRate'] = strainRate
         try:
             print(f"trying to write parameterLog[{tag}]")
             with open(outputFolder + "/parameterLog.pkl", 'wb') as handle:
@@ -321,89 +320,108 @@ def singleModelib():
         print(f"dc.setOutputFrequency({evlOutputPeriod2})")
         dc.setOutputFrequency( evlOutputPeriod2)
 
-        print(f"dc.runGlideSteps({lowRateSteps})")
-        dc.runGlideSteps( lowRateSteps)
+        totalStepsRun = 0
+        while totalStepsRun < lowRateSteps:
 
-        print(f"dc.writeConfigToTxt()")
-        dc.writeConfigToTxt()
+            print(f"dc.runGlideSteps({stepsBetweenMeasurements})")
+            dc.runGlideSteps( stepsBetweenMeasurements )
+            totalStepsRun += stepsBetweenMeasurements 
+            print(f"totalStepsRun: {totalStepsRun}")
 
-        print(f"measurementTimes, measurementIDs, measuredProperties = dc.getMechanicalMeasurements()")
-        measurementTimes, measurementIDs, measuredProperties \
-                = dc.getMechanicalMeasurements()
-        measurementTimes = measurementTimes.squeeze()
-        measurementIDs = measurementIDs.squeeze()
+            print(f"dc.writeConfigToTxt()")
+            dc.writeConfigToTxt()
 
-        try:
-            print(f"trying to write measurements.pkl")
-            with open(outputFolder + "/measurements.pkl", 'wb') as handle:
-                pickle.dump(
-                        measuredProperties,
-                        handle,
-                        protocol=pickle.HIGHEST_PROTOCOL
-                        )
-            with open(outputFolder + "/times.pkl", 'wb') as handle:
-                pickle.dump(
-                        measurementTimes,
-                        handle,
-                        protocol=pickle.HIGHEST_PROTOCOL
-                        )
-        except:
-            print(f"error: failed to write measurements.pkl and times.pkl")
+            print(f"measurementTimes, measurementIDs, measuredProperties = dc.getMechanicalMeasurements()")
+            measurementTimes, measurementIDs, measuredProperties \
+                    = dc.getMechanicalMeasurements()
+            measurementTimes = measurementTimes.squeeze()
+            measurementIDs = measurementIDs.squeeze()
 
-        # calculate total density time series
-        totalDensity = np.zeros( ( len( measuredProperties['density'][0])))
-        for ssID in measuredProperties['density'].keys():
-            for timeStep in range( len(measuredProperties[ 'density'][ ssID])):
-                totalDensity[ timeStep] += measuredProperties[ 'density'][ ssID][ timeStep]
+            try:
+                print(f"trying to write measurements.pkl")
+                with open(outputFolder + "/measurements.pkl", 'wb') as handle:
+                    pickle.dump(
+                            measuredProperties,
+                            handle,
+                            protocol=pickle.HIGHEST_PROTOCOL
+                            )
+                with open(outputFolder + "/times.pkl", 'wb') as handle:
+                    pickle.dump(
+                            measurementTimes,
+                            handle,
+                            protocol=pickle.HIGHEST_PROTOCOL
+                            )
+                with open(outputFolder + "/runIDs.pkl", 'wb') as handle:
+                    pickle.dump(
+                            measurementIDs,
+                            handle,
+                            protocol=pickle.HIGHEST_PROTOCOL
+                            )
+            except:
+                print(f"error: failed to write measurements.pkl and times.pkl")
 
-        #print(f"totalDensity.shape: {totalDensity.shape}")
-        #print(f"measurementTimes.shape: {measurementTimes.shape}")
-        #print(f"totalDensity: {totalDensity}")
+            # calculate total density time series
+            totalDensity = np.zeros( ( len( measuredProperties['density'][0])))
+            for ssID in measuredProperties['density'].keys():
+                for timeStep in range( len(measuredProperties[ 'density'][ ssID])):
+                    totalDensity[ timeStep] += measuredProperties[ 'density'][ ssID][ timeStep]
 
-        # calculate strainRates
-        strainRates = dict() # dict of np.array, one per slip system
-        smoothedPlasticDistortion = dict()
-        smoothedStrainRates = dict()
-        #for ii in measuredProperties['slipSystemPlasticDistortion'].keys(): # keys are ssID
-        #    strainRates[ii] = np.ndarray(measurementTimes.shape[0]-1)
-        #    if (measurementTimes.shape[0] != measuredProperties['slipSystemPlasticDistortion'][ii].shape[0]):
-        #        print(f"error: measurementTimes.shape()[0] != measuredProperties['slipSystemPlasticDistortion'][ii].shape[0]")
-        #        return
-        #    # iterate over time step and calculate rates
-        #    for tt in range( measurementTimes.shape[0] -1):
-        #        delta_t = (measurementTimes[tt+1] - measurementTimes[tt])
-        #        strainRates[ii][tt] = (measuredProperties['slipSystemPlasticDistortion'][ii][tt+1] - measuredProperties['slipSystemPlasticDistortion'][ii][tt])/delta_t
-        #for ssID in measuredProperties['slipSystemPlasticDistortion'].keys():
-        #    if (measurementTimes.shape[0] != measuredProperties['slipSystemPlasticDistortion'][ ssID].shape[0]):
+            #print(f"totalDensity.shape: {totalDensity.shape}")
+            #print(f"measurementTimes.shape: {measurementTimes.shape}")
+            #print(f"totalDensity: {totalDensity}")
 
-        for ssID in measuredProperties['slipSystemPlasticDistortion'].keys():
-            strainRates[ ssID] = calculate_rate( measuredProperties['slipSystemPlasticDistortion'][ ssID], measurementTimes)
+            # calculate strainRates
+            strainRates = dict() # dict of np.array, one per slip system
+            smoothedPlasticDistortion = dict()
+            smoothedStrainRates = dict()
+            #for ii in measuredProperties['slipSystemPlasticDistortion'].keys(): # keys are ssID
+            #    strainRates[ii] = np.ndarray(measurementTimes.shape[0]-1)
+            #    if (measurementTimes.shape[0] != measuredProperties['slipSystemPlasticDistortion'][ii].shape[0]):
+            #        print(f"error: measurementTimes.shape()[0] != measuredProperties['slipSystemPlasticDistortion'][ii].shape[0]")
+            #        return
+            #    # iterate over time step and calculate rates
+            #    for tt in range( measurementTimes.shape[0] -1):
+            #        delta_t = (measurementTimes[tt+1] - measurementTimes[tt])
+            #        strainRates[ii][tt] = (measuredProperties['slipSystemPlasticDistortion'][ii][tt+1] - measuredProperties['slipSystemPlasticDistortion'][ii][tt])/delta_t
+            #for ssID in measuredProperties['slipSystemPlasticDistortion'].keys():
+            #    if (measurementTimes.shape[0] != measuredProperties['slipSystemPlasticDistortion'][ ssID].shape[0]):
 
-            smoothedPlasticDistortion[ ssID] = smooth_measurement( measuredProperties['slipSystemPlasticDistortion'][ ssID], measurementTimes, smoothingWindowTimePeriod)
-            smoothedStrainRates[ ssID] = calculate_rate( smoothedPlasticDistortion[ ssID][:,1], smoothedPlasticDistortion[ ssID][:,0])
+            for ssID in measuredProperties['slipSystemPlasticDistortion'].keys():
+                strainRates[ ssID] = calculate_rate( measuredProperties['slipSystemPlasticDistortion'][ ssID], measurementTimes)
 
-        create_measurement_plots(
-                measuredProperties,
-                measurementTimes,
-                measurementIDs,
-                strainRates,
-                smoothedStrainRates,
-                totalDensity,
-                outputFolder)
+                smoothedPlasticDistortion[ ssID] = smooth_measurement( measuredProperties['slipSystemPlasticDistortion'][ ssID], measurementTimes, smoothingWindowTimePeriod)
+                smoothedStrainRates[ ssID] = calculate_rate( smoothedPlasticDistortion[ ssID][:,1], smoothedPlasticDistortion[ ssID][:,0])
 
+            create_measurement_plots(
+                    measuredProperties,
+                    measurementTimes,
+                    measurementIDs,
+                    strainRates,
+                    smoothedStrainRates,
+                    totalDensity,
+                    outputFolder)
 
-        #print(f"df:{df}")
-        #print(f"ax = df.plot()")
-        #ax = df.plot('time','totalDensity')
-        #print(f" fig.savefig(outputFolder + '/time_totalDensity.png')")
-        #ax.figure.savefig( outputFolder + "/time_totalDensity.png")
-        #df.to_pickle( outputFolder + "/time_totalDensity.pkl")
-        #except:
-        #    print(f"exception while saving plot {outputFolder}/time_totalDensity.png")
+        ################################################################
+        ### end loop
+        #### resume run
+
+        #print(f"dc.runGlideSteps({lowRateSteps})")
+        #dc.runGlideSteps( lowRateSteps)
+
+        #print(f"dc.writeConfigToTxt()")
+        #dc.writeConfigToTxt()
+
+        #print(f"measurementTimes, measurementIDs, measuredProperties = dc.getMechanicalMeasurements()")
+        #measurementTimes, measurementIDs, measuredProperties \
+        #        = dc.getMechanicalMeasurements()
+        #measurementTimes = measurementTimes.squeeze()
+        #measurementIDs = measurementIDs.squeeze()
+
         #try:
-        #    with open(outputFolder + "/densities.pkl", 'wb') as handle:
+        #    print(f"trying to write measurements2.pkl")
+        #    with open(outputFolder + "/measurements.pkl", 'wb') as handle:
         #        pickle.dump(
-        #                measuredProperties['density'],
+        #                measuredProperties,
         #                handle,
         #                protocol=pickle.HIGHEST_PROTOCOL
         #                )
@@ -413,56 +431,180 @@ def singleModelib():
         #                handle,
         #                protocol=pickle.HIGHEST_PROTOCOL
         #                )
-        #    #print(f"trying to create dataframe time_vs_density")
-        #    #myDf = pd.DataFrame(
-        #    #    {
-        #    #        'time':measurementTimes,
-        #    #        'density':measuredProperties['density']
-        #    #        }
-        #    #    ).to_pickle( outputFolder + "/time_vs_density.pkl")
-        #    #print(f"trying to create {outputFolder}/time_vs_density.pkl")
-        #    #myDf.to_pickle( outputFolder + "/time_vs_density.pkl")
+        #    with open(outputFolder + "/runIDs.pkl", 'wb') as handle:
+        #        pickle.dump(
+        #                measurementIDs,
+        #                handle,
+        #                protocol=pickle.HIGHEST_PROTOCOL
+        #                )
         #except:
-        #    raise Exception("could not create pickle file "
-        #            + outputFolder + "/time_vs_density.pkl")
+        #    print(f"error: failed to write measurements2.pkl and times2.pkl")
 
-        #create_density_plot(
-        #        measuredProperties['times'],
-        #        measuredProperties['density'],
-        #        outputFolder
-        #        )
+        ## calculate total density time series
+        #totalDensity = np.zeros( ( len( measuredProperties['density'][0])))
+        #for ssID in measuredProperties['density'].keys():
+        #    for timeStep in range( len(measuredProperties[ 'density'][ ssID])):
+        #        totalDensity[ timeStep] += measuredProperties[ 'density'][ ssID][ timeStep]
 
-        #print(f"dc.getDensityPerSlipSystem():\n{dc.getDensityPerSlipSystem()}")
-        #print(f"measurementTimes:\n{measurementTimes}")
-        #print(f"measurementIDs:\n{measurementIDs}")
-        #print(f"measuredProperties:\n{measuredProperties}")
+        ##print(f"totalDensity.shape: {totalDensity.shape}")
+        ##print(f"measurementTimes.shape: {measurementTimes.shape}")
+        ##print(f"totalDensity: {totalDensity}")
 
-        #measuredProperties['density'][1][2] = 3.3
-        #measuredDensities = measuredProperties['density']
-        #measuredDensities[1][1] = 100.0
-        #print(f"measuredDensities: {np.array(measuredDensities)}")
-        #print(f"np.shape(measuredDensities[23]): {np.shape(measuredDensities[23])}")
-        #print(f"len(measurementTimes):\n{len(measurementTimes)}")
-        #print(f"len(measurementIDs):\n{len(measurementIDs)}")
-        #print(f"len(measuredProperties['density'][0]:\n{len(measuredProperties['density'][0])}")
-        #print(f"len(measuredProperties['stressTensorComponent'][11]:\n{len(measuredProperties['stressTensorComponent'][11])}")
+        ## calculate strainRates
+        #strainRates = dict() # dict of np.array, one per slip system
+        #smoothedPlasticDistortion = dict()
+        #smoothedStrainRates = dict()
+        ##for ii in measuredProperties['slipSystemPlasticDistortion'].keys(): # keys are ssID
+        ##    strainRates[ii] = np.ndarray(measurementTimes.shape[0]-1)
+        ##    if (measurementTimes.shape[0] != measuredProperties['slipSystemPlasticDistortion'][ii].shape[0]):
+        ##        print(f"error: measurementTimes.shape()[0] != measuredProperties['slipSystemPlasticDistortion'][ii].shape[0]")
+        ##        return
+        ##    # iterate over time step and calculate rates
+        ##    for tt in range( measurementTimes.shape[0] -1):
+        ##        delta_t = (measurementTimes[tt+1] - measurementTimes[tt])
+        ##        strainRates[ii][tt] = (measuredProperties['slipSystemPlasticDistortion'][ii][tt+1] - measuredProperties['slipSystemPlasticDistortion'][ii][tt])/delta_t
+        ##for ssID in measuredProperties['slipSystemPlasticDistortion'].keys():
+        ##    if (measurementTimes.shape[0] != measuredProperties['slipSystemPlasticDistortion'][ ssID].shape[0]):
 
-        #dc.disableMechanicalMeasurements()
-        #dc.runGlideSteps( 10)
-        #dc.enableMechanicalMeasurements(2)
-        #dc.runGlideSteps( 10)
+        #for ssID in measuredProperties['slipSystemPlasticDistortion'].keys():
+        #    strainRates[ ssID] = calculate_rate( measuredProperties['slipSystemPlasticDistortion'][ ssID], measurementTimes)
+
+        #    smoothedPlasticDistortion[ ssID] = smooth_measurement( measuredProperties['slipSystemPlasticDistortion'][ ssID], measurementTimes, smoothingWindowTimePeriod)
+        #    smoothedStrainRates[ ssID] = calculate_rate( smoothedPlasticDistortion[ ssID][:,1], smoothedPlasticDistortion[ ssID][:,0])
+
+        #create_measurement_plots(
+        #        measuredProperties,
+        #        measurementTimes,
+        #        measurementIDs,
+        #        strainRates,
+        #        smoothedStrainRates,
+        #        totalDensity,
+        #        outputFolder)
+
+        ##### resume a 2nd time
+        #print(f"dc.runGlideSteps({lowRateSteps})")
+        #dc.runGlideSteps( lowRateSteps)
+
+        #print(f"dc.writeConfigToTxt()")
+        #dc.writeConfigToTxt()
+
+        #print(f"measurementTimes, measurementIDs, measuredProperties = dc.getMechanicalMeasurements()")
         #measurementTimes, measurementIDs, measuredProperties \
         #        = dc.getMechanicalMeasurements()
-        #print(f"measuredProperties['density'][0].flags:\n{measuredProperties['density'][0].flags}")
-        #print(f"measurementTimes:\n{measurementTimes}")
-        #print(f"measurementIDs:\n{measurementIDs}")
-        #print(f"measuredProperties:\n{measuredProperties}")
-        #
-        #print(f"len(measurementTimes):\n{len(measurementTimes)}")
-        #print(f"len(measurementIDs):\n{len(measurementIDs)}")
-        #print(f"len(measuredProperties['density'][0]:\n{len(measuredProperties['density'][0])}")
-        #print(f"len(measuredProperties['stressTensorComponent'][11]:\n{len(measuredProperties['stressTensorComponent'][11])}")
-        #dc.disableMechanicalMeasurements()
+        #measurementTimes = measurementTimes.squeeze()
+        #measurementIDs = measurementIDs.squeeze()
+
+        #try:
+        #    print(f"trying to write measurements.pkl")
+        #    with open(outputFolder + "/measurements3.pkl", 'wb') as handle:
+        #        pickle.dump(
+        #                measuredProperties,
+        #                handle,
+        #                protocol=pickle.HIGHEST_PROTOCOL
+        #                )
+        #    with open(outputFolder + "/times3.pkl", 'wb') as handle:
+        #        pickle.dump(
+        #                measurementTimes,
+        #                handle,
+        #                protocol=pickle.HIGHEST_PROTOCOL
+        #                )
+        #except:
+        #    print(f"error: failed to write measurements3.pkl and times3.pkl")
+
+        ## calculate total density time series
+        #totalDensity = np.zeros( ( len( measuredProperties['density'][0])))
+        #for ssID in measuredProperties['density'].keys():
+        #    for timeStep in range( len(measuredProperties[ 'density'][ ssID])):
+        #        totalDensity[ timeStep] += measuredProperties[ 'density'][ ssID][ timeStep]
+
+        ##print(f"totalDensity.shape: {totalDensity.shape}")
+        ##print(f"measurementTimes.shape: {measurementTimes.shape}")
+        ##print(f"totalDensity: {totalDensity}")
+
+        ## calculate strainRates
+        #strainRates = dict() # dict of np.array, one per slip system
+        #smoothedPlasticDistortion = dict()
+        #smoothedStrainRates = dict()
+        ##for ii in measuredProperties['slipSystemPlasticDistortion'].keys(): # keys are ssID
+        ##    strainRates[ii] = np.ndarray(measurementTimes.shape[0]-1)
+        ##    if (measurementTimes.shape[0] != measuredProperties['slipSystemPlasticDistortion'][ii].shape[0]):
+        ##        print(f"error: measurementTimes.shape()[0] != measuredProperties['slipSystemPlasticDistortion'][ii].shape[0]")
+        ##        return
+        ##    # iterate over time step and calculate rates
+        ##    for tt in range( measurementTimes.shape[0] -1):
+
+
+        ##print(f"df:{df}")
+        ##print(f"ax = df.plot()")
+        ##ax = df.plot('time','totalDensity')
+        ##print(f" fig.savefig(outputFolder + '/time_totalDensity.png')")
+        ##ax.figure.savefig( outputFolder + "/time_totalDensity.png")
+        ##df.to_pickle( outputFolder + "/time_totalDensity.pkl")
+        ##except:
+        ##    print(f"exception while saving plot {outputFolder}/time_totalDensity.png")
+        ##try:
+        ##    with open(outputFolder + "/densities.pkl", 'wb') as handle:
+        ##        pickle.dump(
+        ##                measuredProperties['density'],
+        ##                handle,
+        ##                protocol=pickle.HIGHEST_PROTOCOL
+        ##                )
+        ##    with open(outputFolder + "/times.pkl", 'wb') as handle:
+        ##        pickle.dump(
+        ##                measurementTimes,
+        ##                handle,
+        ##                protocol=pickle.HIGHEST_PROTOCOL
+        ##                )
+        ##    #print(f"trying to create dataframe time_vs_density")
+        ##    #myDf = pd.DataFrame(
+        ##    #    {
+        ##    #        'time':measurementTimes,
+        ##    #        'density':measuredProperties['density']
+        ##    #        }
+        ##    #    ).to_pickle( outputFolder + "/time_vs_density.pkl")
+        ##    #print(f"trying to create {outputFolder}/time_vs_density.pkl")
+        ##    #myDf.to_pickle( outputFolder + "/time_vs_density.pkl")
+        ##except:
+        ##    raise Exception("could not create pickle file "
+        ##            + outputFolder + "/time_vs_density.pkl")
+
+        ##create_density_plot(
+        ##        measuredProperties['times'],
+        ##        measuredProperties['density'],
+        ##        outputFolder
+        ##        )
+
+        ##print(f"dc.getDensityPerSlipSystem():\n{dc.getDensityPerSlipSystem()}")
+        ##print(f"measurementTimes:\n{measurementTimes}")
+        ##print(f"measurementIDs:\n{measurementIDs}")
+        ##print(f"measuredProperties:\n{measuredProperties}")
+
+        ##measuredProperties['density'][1][2] = 3.3
+        ##measuredDensities = measuredProperties['density']
+        ##measuredDensities[1][1] = 100.0
+        ##print(f"measuredDensities: {np.array(measuredDensities)}")
+        ##print(f"np.shape(measuredDensities[23]): {np.shape(measuredDensities[23])}")
+        ##print(f"len(measurementTimes):\n{len(measurementTimes)}")
+        ##print(f"len(measurementIDs):\n{len(measurementIDs)}")
+        ##print(f"len(measuredProperties['density'][0]:\n{len(measuredProperties['density'][0])}")
+        ##print(f"len(measuredProperties['stressTensorComponent'][11]:\n{len(measuredProperties['stressTensorComponent'][11])}")
+
+        ##dc.disableMechanicalMeasurements()
+        ##dc.runGlideSteps( 10)
+        ##dc.enableMechanicalMeasurements(2)
+        ##dc.runGlideSteps( 10)
+        ##measurementTimes, measurementIDs, measuredProperties \
+        ##        = dc.getMechanicalMeasurements()
+        ##print(f"measuredProperties['density'][0].flags:\n{measuredProperties['density'][0].flags}")
+        ##print(f"measurementTimes:\n{measurementTimes}")
+        ##print(f"measurementIDs:\n{measurementIDs}")
+        ##print(f"measuredProperties:\n{measuredProperties}")
+        ##
+        ##print(f"len(measurementTimes):\n{len(measurementTimes)}")
+        ##print(f"len(measurementIDs):\n{len(measurementIDs)}")
+        ##print(f"len(measuredProperties['density'][0]:\n{len(measuredProperties['density'][0])}")
+        ##print(f"len(measuredProperties['stressTensorComponent'][11]:\n{len(measuredProperties['stressTensorComponent'][11])}")
+        ##dc.disableMechanicalMeasurements()
     except OSError:
         print(f"error: runInNewDir " + tag + " failed using parameters: {parameterLog[tag]}")
     except AssertionError:

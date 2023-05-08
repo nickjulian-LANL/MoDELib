@@ -296,6 +296,9 @@ void ddpy::DDInterface::setCurrentStep( const long int& step)
    }
 
    DC->simulationParameters.runID = step;
+   model::DDconfigIO<3> evl(DC->simulationParameters.traitsIO.evlFolder);
+   evl.read( DC->simulationParameters.runID);
+   DC->DN->setConfiguration(evl);
    DC->externalLoadController = DC->getExternalLoadController(
             DC->simulationParameters, *DC, step
             );
@@ -2057,6 +2060,7 @@ void ddpy::DDInterface::specifyDipoles(
 
 void ddpy::DDInterface::setOutputPath( const std::string& outputPath)
 { // TODO: change return value to allow error checking
+   if ( ddBase == nullptr) readddBase();
    // if the path doesn't exist, try to make it
    //if ( ! std::filesystem::is_directory( outputPath))
    //{
