@@ -117,6 +117,23 @@ class DDInterface
          >
          densityPerSlipSystem;
       std::map<
+         size_t,
+         std::shared_ptr<
+                  //pybind11::array_t<double, pybind11::array::c_style>
+                  std::vector<double>
+            >
+         >
+         glissileDensityPerSlipSystem;
+      std::map<
+         size_t,
+         std::shared_ptr<
+                  //pybind11::array_t<double, pybind11::array::c_style>
+                  std::vector<double>
+            >
+         >
+         sessileDensityPerSlipSystem;
+
+      std::map<
          std::pair<size_t,size_t>, // keys are matrix indices: 11, 22, 33, 12, 13, 23
          std::shared_ptr<
                   //pybind11::array_t<double, pybind11::array::c_style>

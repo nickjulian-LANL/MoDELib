@@ -784,12 +784,12 @@ void ddpy::DDInterface::runGlideSteps( const size_t& stepsToRun)
       //times[ measurementNumber] = DC->simulationParameters.totalTime;
       //runIDs[ measurementNumber] = DC->simulationParameters.runID;
 
-      // allocate and initialized densityPerSlipSystem,
-      // // skip resolved quantities
+      // allocate and initialize storage for densities per slip system
       for ( const auto& ss : grain.second.singleCrystal->slipSystems())
       {
          // if ssID isn't in the map yet, instantiate first step w/0.0
          //  else, append a new element to the slip system's vector
+         // instantiate and reserve densityPerSlipSystem
          if  (! densityPerSlipSystem.contains( ss->sID))
          {
             try
@@ -835,6 +835,101 @@ void ddpy::DDInterface::runGlideSteps( const size_t& stepsToRun)
             }
          }
          densityPerSlipSystem[ ss->sID]->push_back( 0.0);
+
+         // instantiate and reserve glissileDensityPerSlipSystem
+         if  (! glissileDensityPerSlipSystem.contains( ss->sID))
+         {
+            try
+            {
+               glissileDensityPerSlipSystem.try_emplace(
+                  ss->sID, // key
+                  std::make_shared< std::vector<double> >()//( sizeOfMeasurementVector,
+                     //0.0) // skip initial configuration
+                  );
+               glissileDensityPerSlipSystem[ ss->sID]->reserve(
+                     sizeOfMeasurementVector
+                     );
+            }
+            catch( const std::exception& e)
+            {
+               std::cout << "error: ddpy::DDInterface::runGlideSteps()"
+                  << " could not reserve vector<> storage for "
+                  << "glissileDensityPerSlipSystem[" << ss->sID << "]"
+                  << ". Maybe try increasing "
+                  << "DDInterface::stepsBetweenMeasurements."
+                  << std::endl;
+               return;
+            }
+         }
+         else
+         {// glissileDensityPerSlipSystem[ ssID] already contains a vector<double>
+            // append an appropriate number of steps to it
+            try
+            {
+               glissileDensityPerSlipSystem[ ss->sID]->reserve(
+                     sizeOfMeasurementVector
+                     );
+            }
+            catch(const std::exception& e)
+            {
+               std::cout << "error: ddpy::DDInterface::runGlideSteps()"
+                  << " could not reserve vector<> storage for "
+                  << "glissileDensityPerSlipSystem[" << ss->sID << "]"
+                  << ". Maybe try increasing "
+                  << "DDInterface::stepsBetweenMeasurements."
+                  << std::endl;
+               return;
+            }
+         }
+         glissileDensityPerSlipSystem[ ss->sID]->push_back( 0.0);
+
+         // instantiate and reserve sessileDensityPerSlipSystem
+         if  (! sessileDensityPerSlipSystem.contains( ss->sID))
+         {
+            try
+            {
+               sessileDensityPerSlipSystem.try_emplace(
+                  ss->sID, // key
+                  std::make_shared< std::vector<double> >()//( sizeOfMeasurementVector,
+                     //0.0) // skip initial configuration
+                  );
+               sessileDensityPerSlipSystem[ ss->sID]->reserve(
+                     sizeOfMeasurementVector
+                     );
+            }
+            catch( const std::exception& e)
+            {
+               std::cout << "error: ddpy::DDInterface::runGlideSteps()"
+                  << " could not reserve vector<> storage for "
+                  << "sessileDensityPerSlipSystem[" << ss->sID << "]"
+                  << ". Maybe try increasing "
+                  << "DDInterface::stepsBetweenMeasurements."
+                  << std::endl;
+               return;
+            }
+         }
+         else
+         {// sessileDensityPerSlipSystem[ ssID] already contains a vector<double>
+            // append an appropriate number of steps to it
+            try
+            {
+               sessileDensityPerSlipSystem[ ss->sID]->reserve(
+                     sizeOfMeasurementVector
+                     );
+            }
+            catch(const std::exception& e)
+            {
+               std::cout << "error: ddpy::DDInterface::runGlideSteps()"
+                  << " could not reserve vector<> storage for "
+                  << "sessileDensityPerSlipSystem[" << ss->sID << "]"
+                  << ". Maybe try increasing "
+                  << "DDInterface::stepsBetweenMeasurements."
+                  << std::endl;
+               return;
+            }
+         }
+         sessileDensityPerSlipSystem[ ss->sID]->push_back( 0.0);
+         // density variables have had storage reserved
 
          // if ssID isn't in the map yet, instantiate first step w/0.0
          //  else, append a new element to the slip system's vector
@@ -902,16 +997,32 @@ void ddpy::DDInterface::runGlideSteps( const size_t& stepsToRun)
                            &&(!loopLink->networkLink()->isGrainBoundarySegment())
                         )
                      {
-                        //densityPerSlipSystem[ ss->sID][ measurementNumber]
-                        densityPerSlipSystem[
-                           loop.second.lock()->slipSystem()->sID
-                        ]->back()
-                           += loopLink->networkLink()->chord().norm()
+                        double densityContribution(
+                              loopLink->networkLink()->chord().norm()
                               /(
                                loopLink->networkLink()->loopLinks().size()
                                * ddBase->mesh.volume() // [b^3]
                                * std::pow( ddBase->poly.b_SI, 2) //[m^2/b^2]
-                               ); // [m^-2];
+                               ) // [m^-2];
+                              );
+
+                        densityPerSlipSystem[
+                           loop.second.lock()->slipSystem()->sID
+                        ]->back() += densityContribution;
+
+                        if ( loopLink->networkLink()->isGlissile())
+                        {
+                           glissileDensityPerSlipSystem[
+                              loop.second.lock()->slipSystem()->sID
+                           ]->back() += densityContribution;
+                        }
+
+                        if ( loopLink->networkLink()->isSessile())
+                        {
+                           sessileDensityPerSlipSystem[
+                              loop.second.lock()->slipSystem()->sID
+                           ]->back() += densityContribution;
+                        }
                      }
                   }
                }
@@ -1152,6 +1263,8 @@ void ddpy::DDInterface::runGlideSteps( const size_t& stepsToRun)
             //   = currentSSPD[ std::pair<int,int>( grainID, ss->sID)];
 
             densityPerSlipSystem[ ss->sID]->push_back( 0.0); // [m^{-2}]
+            glissileDensityPerSlipSystem[ ss->sID]->push_back( 0.0); // [m^{-2}]
+            sessileDensityPerSlipSystem[ ss->sID]->push_back( 0.0); // [m^{-2}]
          } // for ( const auto& ss : grain.second.singleCrystal->slipSystems())
 
          // accumulate density per slip system, initial density skipped
@@ -1169,16 +1282,32 @@ void ddpy::DDInterface::runGlideSteps( const size_t& stepsToRun)
                               &&(!loopLink->networkLink()->isGrainBoundarySegment())
                            )
                         {
-                           //densityPerSlipSystem[ ss->sID][ measurementNumber]
-                           densityPerSlipSystem[
-                              loop.second.lock()->slipSystem()->sID
-                           ]->back()
-                              += loopLink->networkLink()->chord().norm()//[b]
+                           double densityContribution(
+                                 loopLink->networkLink()->chord().norm()
                                  /(
                                   loopLink->networkLink()->loopLinks().size()
                                   * ddBase->mesh.volume() // [b^3]
-                                  * std::pow( ddBase->poly.b_SI, 2)//[m^2/b^2]
-                                  );// [m^{-2}]
+                                  * std::pow( ddBase->poly.b_SI, 2) //[m^2/b^2]
+                                  ) // [m^-2];
+                                 );
+
+                           densityPerSlipSystem[
+                              loop.second.lock()->slipSystem()->sID
+                           ]->back() += densityContribution;
+
+                           if ( loopLink->networkLink()->isGlissile())
+                           {
+                              glissileDensityPerSlipSystem[
+                                 loop.second.lock()->slipSystem()->sID
+                              ]->back() += densityContribution;
+                           }
+
+                           if ( loopLink->networkLink()->isSessile())
+                           {
+                              sessileDensityPerSlipSystem[
+                                 loop.second.lock()->slipSystem()->sID
+                              ]->back() += densityContribution;
+                           }
                         }
                      }
                   }
@@ -1266,6 +1395,18 @@ ddpy::DDInterface::getMechanicalMeasurements()
 
       // TODO: fix. This is still copying the data, rather than passing its ownership to Python.
       measurements["density"][ key] = pybind11::cast( *value);
+   }
+
+   for ( const auto& [key, value] : glissileDensityPerSlipSystem)
+   {
+      // TODO: fix. This is still copying the data, rather than passing its ownership to Python.
+      measurements["glissileDensity"][ key] = pybind11::cast( *value);
+   }
+
+   for ( const auto& [key, value] : sessileDensityPerSlipSystem)
+   {
+      // TODO: fix. This is still copying the data, rather than passing its ownership to Python.
+      measurements["sessileDensity"][ key] = pybind11::cast( *value);
    }
 
    measurements.try_emplace(
@@ -1384,6 +1525,10 @@ void ddpy::DDInterface::clearMechanicalMeasurements()
       slipSystemPlasticDistortion[ ss->sID]->shrink_to_fit();
       densityPerSlipSystem[ ss->sID]->clear();
       densityPerSlipSystem[ ss->sID]->shrink_to_fit();
+      glissileDensityPerSlipSystem[ ss->sID]->clear();
+      glissileDensityPerSlipSystem[ ss->sID]->shrink_to_fit();
+      sessileDensityPerSlipSystem[ ss->sID]->clear();
+      sessileDensityPerSlipSystem[ ss->sID]->shrink_to_fit();
    }
 
    // measurements indexed by tensor indices

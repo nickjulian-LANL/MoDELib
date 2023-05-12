@@ -34,16 +34,17 @@ def singleModelib():
     #lowRateSteps = 1000
     hiRateSteps = 300
     zeroRateSteps = 300
-    lowRateSteps = 100000
+    lowRateSteps = 1000
     #lowRateSteps = 3000
-    stepsBetweenMeasurements = 1000 # steps
+    #stepsBetweenMeasurements = 1000 # steps
+    stepsBetweenMeasurements = 100 # steps
     measurementPeriod = 1
     evlOutputPeriod1 = 100
     #evlOutputPeriod1 = 300
     evlOutputPeriod2 = 100
     #smoothingWindowTimePeriod = 1.0
-    smoothingWindowTimePeriod = 5.0e-9
-    #smoothingWindowTimePeriod = 1.0e-14
+    #smoothingWindowTimePeriod = 5.0e-9
+    smoothingWindowTimePeriod = 1.0e-14
     #smoothingWindowTimePeriod = 700.0
     dddFolderPath = "./testSerialRuns-allSlipSystems"#contains inputFiles/{DD.txt,mesh,load,material}
     lattice = 'bcc' # TODO: read crystalStructure from {material}.txt
@@ -135,7 +136,9 @@ def singleModelib():
     #periodicLoopRadiusDistributionStd = 2.0e-8
     #periodicLoopTargetDensity = 1e13
     periodicLoopSegmentCount = 50
-    periodicLoopRadiusDistributionMean = 1.0e-6
+    #periodicLoopRadiusDistributionMean = 5.0e-7
+    #periodicLoopRadiusDistributionStd = 1.0e-8
+    periodicLoopRadiusDistributionMean = 1.0e-6 # strainRate 1e+3 or less
     periodicLoopRadiusDistributionStd = 1.0e-8
     #periodicLoopRadiusDistributionMean = 1.0e-7
     #periodicLoopRadiusDistributionStd = 1.0e-8
@@ -362,9 +365,13 @@ def singleModelib():
 
             # calculate total density time series
             totalDensity = np.zeros( ( len( measuredProperties['density'][0])))
+            totalGlissileDensity = np.zeros( ( len( measuredProperties['glissileDensity'][0])))
+            totalSessileDensity = np.zeros( ( len( measuredProperties['sessileDensity'][0])))
             for ssID in measuredProperties['density'].keys():
                 for timeStep in range( len(measuredProperties[ 'density'][ ssID])):
                     totalDensity[ timeStep] += measuredProperties[ 'density'][ ssID][ timeStep]
+                    totalGlissileDensity[ timeStep] += measuredProperties[ 'glissileDensity'][ ssID][ timeStep]
+                    totalSessileDensity[ timeStep] += measuredProperties[ 'sessileDensity'][ ssID][ timeStep]
 
             #print(f"totalDensity.shape: {totalDensity.shape}")
             #print(f"measurementTimes.shape: {measurementTimes.shape}")
@@ -399,6 +406,8 @@ def singleModelib():
                     strainRates,
                     smoothedStrainRates,
                     totalDensity,
+                    totalGlissileDensity,
+                    totalSessileDensity,
                     outputFolder)
 
         ################################################################
@@ -706,6 +715,8 @@ def create_measurement_plots(
     strainRates,
     smoothedStrainRates,
     totalDensity,
+    totalGlissileDensity,
+    totalSessileDensity,
     outputFolder):
 
     fig, ax = plt.subplots(1,1, figsize=(4,4))
@@ -771,6 +782,24 @@ def create_measurement_plots(
         plt.savefig(outputFolder + "/time_density_" + str(ssID) + ".png")
         plt.close()
 
+    for ssID in measuredProperties['glissileDensity'].keys():
+        fig, ax = plt.subplots(1,1, figsize=(4,4))
+        ax.set_xlabel('time [s]')
+        ax.set_ylabel(r'glissileDensity [m$^{-2}$]')
+        ax.plot( measurementTimes, measuredProperties['glissileDensity'][ ssID], alpha=0.5)
+        plt.tight_layout()
+        plt.savefig(outputFolder + "/time_glissileDensity_" + str(ssID) + ".png")
+        plt.close()
+
+    for ssID in measuredProperties['sessileDensity'].keys():
+        fig, ax = plt.subplots(1,1, figsize=(4,4))
+        ax.set_xlabel('time [s]')
+        ax.set_ylabel(r'sessileDensity [m$^{-2}$]')
+        ax.plot( measurementTimes, measuredProperties['sessileDensity'][ ssID], alpha=0.5)
+        plt.tight_layout()
+        plt.savefig(outputFolder + "/time_sessileDensity_" + str(ssID) + ".png")
+        plt.close()
+
     fig, ax = plt.subplots(1,1, figsize=(4,4))
     ax.set_xlabel('time [s]')
     ax.set_ylabel(r'density [m$^{-2}$]')
@@ -778,6 +807,24 @@ def create_measurement_plots(
         ax.plot( measurementTimes, measuredProperties['density'][ ssID], alpha=0.5)
     plt.tight_layout()
     plt.savefig(outputFolder + "/time_densities" + ".png")
+    plt.close()
+
+    fig, ax = plt.subplots(1,1, figsize=(4,4))
+    ax.set_xlabel('time [s]')
+    ax.set_ylabel(r'glissileDensity [m$^{-2}$]')
+    for ssID in measuredProperties['glissileDensity'].keys():
+        ax.plot( measurementTimes, measuredProperties['glissileDensity'][ ssID], alpha=0.5)
+    plt.tight_layout()
+    plt.savefig(outputFolder + "/time_glissileDensities" + ".png")
+    plt.close()
+
+    fig, ax = plt.subplots(1,1, figsize=(4,4))
+    ax.set_xlabel('time [s]')
+    ax.set_ylabel(r'sessileDensity [m$^{-2}$]')
+    for ssID in measuredProperties['sessileDensity'].keys():
+        ax.plot( measurementTimes, measuredProperties['sessileDensity'][ ssID], alpha=0.5)
+    plt.tight_layout()
+    plt.savefig(outputFolder + "/time_sessileDensities" + ".png")
     plt.close()
 
     fig, ax = plt.subplots(1,1, figsize=(4,4))
@@ -791,6 +838,26 @@ def create_measurement_plots(
     plt.close()
 
     fig, ax = plt.subplots(1,1, figsize=(4,4))
+    ax.set_xlabel(r'glissileDensity [m$^{-2}$]')
+    ax.set_ylabel(r'strainRate [s$^{-1}$]')
+    for ssID in strainRates.keys():
+        ax.plot( measuredProperties['glissileDensity'][ ssID][1:],
+                strainRates[ ssID], alpha=0.5, label='raw')
+    plt.tight_layout()
+    plt.savefig(outputFolder + "/glissileDensity_strainRates" + ".png")
+    plt.close()
+
+    fig, ax = plt.subplots(1,1, figsize=(4,4))
+    ax.set_xlabel(r'sessileDensity [m$^{-2}$]')
+    ax.set_ylabel(r'strainRate [s$^{-1}$]')
+    for ssID in strainRates.keys():
+        ax.plot( measuredProperties['sessileDensity'][ ssID][1:],
+                strainRates[ ssID], alpha=0.5, label='raw')
+    plt.tight_layout()
+    plt.savefig(outputFolder + "/sessileDensity_strainRates" + ".png")
+    plt.close()
+
+    fig, ax = plt.subplots(1,1, figsize=(4,4))
     ax.set_xlabel(r'density [m$^{-2}$]')
     ax.set_ylabel(r'smoothedStrainRate [s$^{-1}$]')
     for ssID in strainRates.keys():
@@ -798,6 +865,26 @@ def create_measurement_plots(
                 smoothedStrainRates[ ssID], alpha=0.5, label='smoothed')
     plt.tight_layout()
     plt.savefig(outputFolder + "/density_smoothStrainRates" + ".png")
+    plt.close()
+
+    fig, ax = plt.subplots(1,1, figsize=(4,4))
+    ax.set_xlabel(r'glissileDensity [m$^{-2}$]')
+    ax.set_ylabel(r'smoothedStrainRate [s$^{-1}$]')
+    for ssID in strainRates.keys():
+        ax.plot( measuredProperties['glissileDensity'][ ssID][1:],
+                smoothedStrainRates[ ssID], alpha=0.5, label='smoothed')
+    plt.tight_layout()
+    plt.savefig(outputFolder + "/glissileDensity_smoothStrainRates" + ".png")
+    plt.close()
+
+    fig, ax = plt.subplots(1,1, figsize=(4,4))
+    ax.set_xlabel(r'sessileDensity [m$^{-2}$]')
+    ax.set_ylabel(r'smoothedStrainRate [s$^{-1}$]')
+    for ssID in strainRates.keys():
+        ax.plot( measuredProperties['sessileDensity'][ ssID][1:],
+                smoothedStrainRates[ ssID], alpha=0.5, label='smoothed')
+    plt.tight_layout()
+    plt.savefig(outputFolder + "/sessileDensity_smoothStrainRates" + ".png")
     plt.close()
 
     fig, ax = plt.subplots(1,1, figsize=(4,4))
@@ -809,6 +896,27 @@ def create_measurement_plots(
     plt.tight_layout()
     plt.savefig(outputFolder + "/totalDensity_smoothStrainRates" + ".png")
     plt.close()
+
+    fig, ax = plt.subplots(1,1, figsize=(4,4))
+    ax.set_xlabel(r'totalGlissileDensity [m$^{-2}$]')
+    ax.set_ylabel(r'smoothedStrainRate [s$^{-1}$]')
+    for ssID in strainRates.keys():
+        ax.plot( totalGlissileDensity[1:],
+                smoothedStrainRates[ ssID], alpha=0.5, label='smoothed')
+    plt.tight_layout()
+    plt.savefig(outputFolder + "/totalGlissileDensity_smoothStrainRates" + ".png")
+    plt.close()
+
+    fig, ax = plt.subplots(1,1, figsize=(4,4))
+    ax.set_xlabel(r'totalSessileDensity [m$^{-2}$]')
+    ax.set_ylabel(r'smoothedStrainRate [s$^{-1}$]')
+    for ssID in strainRates.keys():
+        ax.plot( totalSessileDensity[1:],
+                smoothedStrainRates[ ssID], alpha=0.5, label='smoothed')
+    plt.tight_layout()
+    plt.savefig(outputFolder + "/totalSessileDensity_smoothStrainRates" + ".png")
+    plt.close()
+
 
     for ssID in strainRates.keys():
         fig, ax = plt.subplots(1,1, figsize=(4,4))
@@ -822,6 +930,30 @@ def create_measurement_plots(
         plt.savefig(outputFolder + "/density_strainRate_" + str(ssID) + ".png")
         plt.close()
 
+    for ssID in strainRates.keys():
+        fig, ax = plt.subplots(1,1, figsize=(4,4))
+        ax.set_xlabel(r'glissileDensity [m$^{-2}$]')
+        ax.set_ylabel(r'strainRate [s$^{-1}$]')
+        ax.plot( measuredProperties['glissileDensity'][ ssID][1:],
+                smoothedStrainRates[ ssID], alpha=0.5, label='smoothed')
+        ax.plot( measuredProperties['glissileDensity'][ ssID][1:], strainRates[ ssID], alpha=0.5, label='raw')
+        ax.legend( loc="best", framealpha=0.0)
+        plt.tight_layout()
+        plt.savefig(outputFolder + "/glissileDensity_strainRate_" + str(ssID) + ".png")
+        plt.close()
+
+    for ssID in strainRates.keys():
+        fig, ax = plt.subplots(1,1, figsize=(4,4))
+        ax.set_xlabel(r'sessileDensity [m$^{-2}$]')
+        ax.set_ylabel(r'strainRate [s$^{-1}$]')
+        ax.plot( measuredProperties['sessileDensity'][ ssID][1:],
+                smoothedStrainRates[ ssID], alpha=0.5, label='smoothed')
+        ax.plot( measuredProperties['sessileDensity'][ ssID][1:], strainRates[ ssID], alpha=0.5, label='raw')
+        ax.legend( loc="best", framealpha=0.0)
+        plt.tight_layout()
+        plt.savefig(outputFolder + "/sessileDensity_strainRate_" + str(ssID) + ".png")
+        plt.close()
+
 
     fig, ax = plt.subplots(1,1, figsize=(4,4))
     ax.set_xlabel('time [s]')
@@ -829,6 +961,20 @@ def create_measurement_plots(
     ax.plot( measurementTimes, totalDensity)
     plt.tight_layout()
     plt.savefig( outputFolder + "/time_totalDensity.png")
+
+    fig, ax = plt.subplots(1,1, figsize=(4,4))
+    ax.set_xlabel('time [s]')
+    ax.set_ylabel(r'totalGlissileDensity [m$^{-2}$]')
+    ax.plot( measurementTimes, totalGlissileDensity)
+    plt.tight_layout()
+    plt.savefig( outputFolder + "/time_totalGlissileDensity.png")
+
+    fig, ax = plt.subplots(1,1, figsize=(4,4))
+    ax.set_xlabel('time [s]')
+    ax.set_ylabel(r'totalSessileDensity [m$^{-2}$]')
+    ax.plot( measurementTimes, totalSessileDensity)
+    plt.tight_layout()
+    plt.savefig( outputFolder + "/time_totalSessileDensity.png")
 
     #df = pd.DataFrame(
     #        {
@@ -901,6 +1047,30 @@ def create_measurement_plots(
     plt.close()
 
     fig, ax = plt.subplots(1,1, figsize=(4,4))
+    ax.set_xlabel(r'totalGlissileDensity [m$^{-2}$]')
+    ax.set_ylabel('plasticDistortion')
+    for ii in measuredProperties['slipSystemPlasticDistortion'].keys():
+        ax.plot(
+                totalGlissileDensity,
+                measuredProperties['slipSystemPlasticDistortion'][ii],
+                alpha=0.5)
+    plt.tight_layout()
+    plt.savefig(outputFolder + "/plasticDistortion_totalGlissileDensity.png")
+    plt.close()
+
+    fig, ax = plt.subplots(1,1, figsize=(4,4))
+    ax.set_xlabel(r'totalSessileDensity [m$^{-2}$]')
+    ax.set_ylabel('plasticDistortion')
+    for ii in measuredProperties['slipSystemPlasticDistortion'].keys():
+        ax.plot(
+                totalSessileDensity,
+                measuredProperties['slipSystemPlasticDistortion'][ii],
+                alpha=0.5)
+    plt.tight_layout()
+    plt.savefig(outputFolder + "/plasticDistortion_totalSessileDensity.png")
+    plt.close()
+
+    fig, ax = plt.subplots(1,1, figsize=(4,4))
     ax.set_xlabel(r'density [m$^{-2}$]')
     ax.set_ylabel('plasticDistortion')
     for ii in measuredProperties['slipSystemPlasticDistortion'].keys():
@@ -910,6 +1080,30 @@ def create_measurement_plots(
                 alpha=0.5)
     plt.tight_layout()
     plt.savefig(outputFolder + "/plasticDistortion_density.png")
+    plt.close()
+
+    fig, ax = plt.subplots(1,1, figsize=(4,4))
+    ax.set_xlabel(r'glissileDensity [m$^{-2}$]')
+    ax.set_ylabel('plasticDistortion')
+    for ii in measuredProperties['slipSystemPlasticDistortion'].keys():
+        ax.plot(
+                measuredProperties['glissileDensity'][ii],
+                measuredProperties['slipSystemPlasticDistortion'][ii],
+                alpha=0.5)
+    plt.tight_layout()
+    plt.savefig(outputFolder + "/plasticDistortion_glissileDensity.png")
+    plt.close()
+
+    fig, ax = plt.subplots(1,1, figsize=(4,4))
+    ax.set_xlabel(r'sessileDensity [m$^{-2}$]')
+    ax.set_ylabel('plasticDistortion')
+    for ii in measuredProperties['slipSystemPlasticDistortion'].keys():
+        ax.plot(
+                measuredProperties['sessileDensity'][ii],
+                measuredProperties['slipSystemPlasticDistortion'][ii],
+                alpha=0.5)
+    plt.tight_layout()
+    plt.savefig(outputFolder + "/plasticDistortion_sessileDensity.png")
     plt.close()
 
     #rss = dict()
