@@ -34,14 +34,14 @@ def singleModelib():
     #lowRateSteps = 1000
     hiRateSteps = 300
     zeroRateSteps = 300
-    lowRateSteps = 1000
+    lowRateSteps = 1000000
     #lowRateSteps = 3000
     #stepsBetweenMeasurements = 1000 # steps
     stepsBetweenMeasurements = 100 # steps
     measurementPeriod = 1
-    evlOutputPeriod1 = 100
+    evlOutputPeriod1 = 1000
     #evlOutputPeriod1 = 300
-    evlOutputPeriod2 = 100
+    evlOutputPeriod2 = 1000
     #smoothingWindowTimePeriod = 1.0
     #smoothingWindowTimePeriod = 5.0e-9
     smoothingWindowTimePeriod = 1.0e-14
@@ -961,6 +961,7 @@ def create_measurement_plots(
     ax.plot( measurementTimes, totalDensity)
     plt.tight_layout()
     plt.savefig( outputFolder + "/time_totalDensity.png")
+    plt.close()
 
     fig, ax = plt.subplots(1,1, figsize=(4,4))
     ax.set_xlabel('time [s]')
@@ -968,6 +969,7 @@ def create_measurement_plots(
     ax.plot( measurementTimes, totalGlissileDensity)
     plt.tight_layout()
     plt.savefig( outputFolder + "/time_totalGlissileDensity.png")
+    plt.close()
 
     fig, ax = plt.subplots(1,1, figsize=(4,4))
     ax.set_xlabel('time [s]')
@@ -975,6 +977,7 @@ def create_measurement_plots(
     ax.plot( measurementTimes, totalSessileDensity)
     plt.tight_layout()
     plt.savefig( outputFolder + "/time_totalSessileDensity.png")
+    plt.close()
 
     #df = pd.DataFrame(
     #        {

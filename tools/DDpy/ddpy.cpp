@@ -294,6 +294,8 @@ void ddpy::DDInterface::setCurrentStep( const long int& step)
          << "DefectiveCrystal is instantiated" << std::endl;
       return;
    }
+   std::cout << "calling ddpy::DDInterface::setCurrentStep(" // debug
+      << step << ")" << std::endl; // debug
 
    DC->simulationParameters.runID = step;
    model::DDconfigIO<3> evl(DC->simulationParameters.traitsIO.evlFolder);
@@ -560,7 +562,9 @@ void ddpy::DDInterface::setEndingStep( const long int& endingStep)
 void ddpy::DDInterface::readddBase()
 {
    //resetStaticIDs();
+   std::cout << "resetting staticIDs" << std::endl; // debug
    if ( ddBase != nullptr) resetStaticIDs(); // TODO: is this necessary?
+   std::cout << "reading " << dddFolderPath << std::endl; // debug
    ddBase =  std::unique_ptr<DislocationDynamicsBaseType>(
          new DislocationDynamicsBaseType( dddFolderPath)
          );
@@ -601,6 +605,7 @@ void ddpy::DDInterface::readDefectiveCrystal()
    DC = std::unique_ptr<DefectiveCrystalType>(
          new DefectiveCrystalType( *ddBase)
          );
+   //DC->simulationParameters.manageRestart();
    return;
 }
 
