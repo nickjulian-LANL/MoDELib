@@ -46,7 +46,7 @@ DislocationNetwork<dim,corder>::DislocationNetwork(DefectiveCrystalParameters& _
 /* init */,computeDDinteractions(TextFileParser(simulationParameters.traitsIO.ddFile).readScalar<int>("computeDDinteractions",true))
 /* init */,outputFrequency(TextFileParser(simulationParameters.traitsIO.ddFile).readScalar<int>("outputFrequency",true))
 /* init */,outputBinary(TextFileParser(simulationParameters.traitsIO.ddFile).readScalar<int>("outputBinary",true))
-/* init */,outputGlidePlanes(TextFileParser(simulationParameters.traitsIO.ddFile).readScalar<int>("outputGlidePlanes",true))
+///* init */,outputGlidePlanes(TextFileParser(simulationParameters.traitsIO.ddFile).readScalar<int>("outputGlidePlanes",true))
 /* init */,outputMeshDisplacement(TextFileParser(simulationParameters.traitsIO.ddFile).readScalar<int>("outputMeshDisplacement",true))
 /* init */,outputFEMsolution(TextFileParser(simulationParameters.traitsIO.ddFile).readScalar<int>("outputFEMsolution",true))
 /* init */,outputDislocationLength(TextFileParser(simulationParameters.traitsIO.ddFile).readScalar<int>("outputDislocationLength",true))
@@ -233,7 +233,7 @@ void DislocationNetwork<dim,corder>::setConfiguration(const DDconfigIO<dim>& evl
         {
             
             const auto& grain(poly.grain(searchPair.second->region->regionID));
-            if(inclusion.phaseID<grain.singleCrystal->secondPhases().size())
+            if(inclusion.phaseID<int(grain.singleCrystal->secondPhases().size()))
             {
             const auto secondPhase(grain.singleCrystal->secondPhases()[inclusion.phaseID]);
             EshelbyInclusionBase<dim>::set_count(inclusion.inclusionID);
@@ -309,7 +309,7 @@ void DislocationNetwork<dim,corder>::setConfiguration(const DDconfigIO<dim>& evl
                 if(grainIDs.size()==1)
                 {
                     const auto& grain(poly.grain(*grainIDs.begin()));
-                    if(inclusion.phaseID<grain.singleCrystal->secondPhases().size())
+                    if(inclusion.phaseID<int(grain.singleCrystal->secondPhases().size()))
                     {
                     const auto secondPhase(grain.singleCrystal->secondPhases()[inclusion.phaseID]);
                     EshelbyInclusionBase<dim>::set_count(inclusion.inclusionID);

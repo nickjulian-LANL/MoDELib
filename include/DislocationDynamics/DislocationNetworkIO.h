@@ -194,23 +194,17 @@ namespace model
                 }
             }
             
-            if(DN.outputGlidePlanes)
-            {
-                for(const auto& pair : DN.glidePlaneFactory.glidePlanes())
-                {
-                    const auto glidePlane(pair.second.lock());
-                    if(glidePlane)
-                    {
-                        temp.glidePlanes().emplace_back(glidePlane->key);
-//                        for(const auto& seg : glidePlane->meshIntersections)
-//                        {
-//                            glidePlanesBoundaries().emplace_back(glidePlane->sID,*seg);
-//                        }
-                    }
-                }
-                
-//                temp.setGlidePlaneBoundaries(DN.glidePlaneFactory);
-            }
+//            if(DN.outputGlidePlanes)
+//            {
+//                for(const auto& pair : DN.glidePlaneFactory.glidePlanes())
+//                {
+//                    const auto glidePlane(pair.second.lock());
+//                    if(glidePlane)
+//                    {
+//                        temp.glidePlanes().emplace_back(glidePlane->key);
+//                    }
+//                }
+//            }
             
             return temp;
         }
@@ -366,18 +360,24 @@ namespace model
             if(DN.computeElasticEnergyPerLength)
             {
                 double eE(0.0);
+                double eC(0.0);
+
                 for(const auto& linkIter : DN.networkLinks())
                 {// Collect LoopLinks by loop IDs
                     const auto link(linkIter.second.lock());
                     for(const auto& qPoint : link->quadraturePoints())
                     {
                         eE+=qPoint.elasticEnergyPerLength*qPoint.dL;
+                        eC+=qPoint.coreEnergyPerLength*qPoint.dL;
+
                     }
                 }
-                f_file<<eE<<" ";
+                f_file<<eE<<" "<<eC<<" ";
                 if(runID==0)
                 {
                     F_labels<<"elastic energy [mu b^3]\n";
+                    F_labels<<"core energy [mu b^3]\n";
+
                 }
             }
             

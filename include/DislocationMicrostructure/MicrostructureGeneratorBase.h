@@ -30,7 +30,7 @@ namespace model
 
     struct PolyPoint
     {
-        PeriodicPlanePatch<3>* periodicPlanePatch() const;
+        std::shared_ptr<PeriodicPlanePatch<3>> periodicPlanePatch() const;
     };
 
     struct MicrostructureGeneratorBase
