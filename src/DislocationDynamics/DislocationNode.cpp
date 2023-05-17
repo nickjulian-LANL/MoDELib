@@ -178,31 +178,39 @@ namespace model
             }
         }
         
-        if(this->network().use_velocityFilter && !isBoundaryNode())
+        if(this->network().use_velocityFilter)
         {
-            const double filterThreshold=0.05*velocity.norm()*vOld.norm()+FLT_EPSILON;
-            
-            if(velocity.dot(vOld)<-filterThreshold)
+            if(!isBoundaryNode())
             {
-                velocityReductionCoeff*=this->network().velocityReductionFactor;
-            }
-            else if(velocity.dot(vOld)>filterThreshold)
-            {
-                velocityReductionCoeff/=this->network().velocityReductionFactor;
+                const double filterThreshold=0.05*velocity.norm()*vOld.norm()+FLT_EPSILON;
+                
+                if(velocity.dot(vOld)<-filterThreshold)
+                {
+                    velocityReductionCoeff*=this->network().velocityReductionFactor;
+                }
+                else if(velocity.dot(vOld)>filterThreshold)
+                {
+                    velocityReductionCoeff/=this->network().velocityReductionFactor;
+                }
+                else
+                {
+                    // don't change velocityReductionCoeff
+                }
+                if(velocityReductionCoeff>1.0)
+                {
+                    velocityReductionCoeff=1.0;
+                }
+                if(velocityReductionCoeff<0.005)
+                {
+                    velocityReductionCoeff=0.005;
+                }
+                velocity*=velocityReductionCoeff;
             }
             else
             {
-                // don't change velocityReductionCoeff
+                // TO DO BOUNDARY NODES NEED TO INTERPOLATE ALSO THE VELOCTY FILTER
             }
-            if(velocityReductionCoeff>1.0)
-            {
-                velocityReductionCoeff=1.0;
-            }
-            if(velocityReductionCoeff<0.005)
-            {
-                velocityReductionCoeff=0.005;
-            }
-            velocity*=velocityReductionCoeff;
+            
         }
     }
 
@@ -420,6 +428,7 @@ namespace model
             if (face->regionIDs.first == face->regionIDs.second)
             {
                 _isOnExternalBoundary = true;
+                break;
             }
         }
 
@@ -435,6 +444,7 @@ namespace model
             if (face->regionIDs.first != face->regionIDs.second)
             {
                 _isOnInternalBoundary = true;
+                break;
             }
         }
         return _isOnInternalBoundary;
