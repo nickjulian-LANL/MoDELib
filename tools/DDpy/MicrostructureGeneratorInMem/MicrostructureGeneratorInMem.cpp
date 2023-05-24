@@ -18,9 +18,9 @@
 #include <PeriodicDipoleGeneratorInMem.h>
 #include <PeriodicLoopGeneratorInMem.h>
 #include <PrismaticLoopGeneratorInMem.h>
-//#include <InclusionsGeneratorInMem.h>
-//#include <IrradiationDefectsGeneratorInMem.h>
-//#include <VTKGeneratorInMem.h>
+//#include <SphericalInclusionsGenerator.h>
+//#include <PolyhedronInclusionsGenerator.h>
+//#include <IrradiationDefectsGenerator.h>
 
 namespace model
 {
@@ -83,20 +83,25 @@ namespace model
                 success=this->emplace(tag,
                       new PrismaticLoopGeneratorInMem( spec)).second;
             }
-            //else if(microstructureType=="Inclusions")
+            //else if(microstructureType=="SphericalInclusions")
             //{
-            //    success=this->emplace(tag,new InclusionsGeneratorInMem(microstructureFileName)).second;
+            //    success=this->emplace(tag,new SphericalInclusionsGeneratorInMem( spec)).second;
+            //}
+            //else if(microstructureType=="PolyhedronInclusions")
+            //{
+            //    success=this->emplace(tag,new PolyhedronInclusionsGeneratorInMem( spec)).second;
             //}
             //else if(microstructureType=="Irradiation")
             //{
-            //    success=this->emplace(tag,new IrradiationDefectsGeneratorInMem(microstructureFileName)).second;
+            //    success=this->emplace(tag,new IrradiationDefectsGeneratorInMem( spec)).second;
             //}
             //else if(microstructureType=="VTK")
             //{
-            //    success=this->emplace(tag,new VTKGeneratorInMem(microstructureFileName)).second;
+            //    success=this->emplace(tag,new VTKGeneratorInMem( spec)).second;
             //}
             else
-            { std::cout<<"unkown microstructure type "<<microstructureType<<std::endl;
+            {
+               std::cout<<"unkown microstructure type "<<microstructureType<<std::endl;
             }
             if(!success)
             {
@@ -170,7 +175,7 @@ namespace model
       loopNodePosTemp.emplace_back(pos, &dummyPolyPoints.back());
   }
   
-  const auto ppi(periodicPlane->polygonPatchIntersection(loopNodePosTemp));
+  const auto ppi(periodicPlane->polygonPatchIntersection(loopNodePosTemp,true));
   const size_t loopID(insertLoop(b,unitNormal,P0,grainID,loopType));
   std::vector<size_t> loopNodeIDs;
   for(const auto &tup : ppi)
@@ -265,17 +270,17 @@ size_t MicrostructureGeneratorInMem::insertInclusion(const std::vector<VectorDim
     void MicrostructureGeneratorInMem::writeConfigFiles(const size_t& fileID)
     {
         
-        const int outputGlidePlanes(TextFileParser(traitsIO.ddFile).readScalar<int>("outputGlidePlanes",true));
-       //DC->DN->outputGlidePlanes // Note: DC and DN are not existing yet
+        //const int outputGlidePlanes(TextFileParser(traitsIO.ddFile).readScalar<int>("outputGlidePlanes",true));
+        //DC->DN->outputGlidePlanes // Note: DC and DN are not existing yet
 
-        if(outputGlidePlanes)
-        {
-            for(const auto& loop : configIO.loops())
-            {
-                GlidePlaneKey<3> loopPlaneKey(loop.P, poly.grain(loop.grainID).singleCrystal->reciprocalLatticeDirection(loop.N));
-                auxIO.glidePlanes().emplace_back(loopPlaneKey);
-            }
-        }
+        //if(outputGlidePlanes)
+        //{
+        //    for(const auto& loop : configIO.loops())
+        //    {
+        //        GlidePlaneKey<3> loopPlaneKey(loop.P, poly.grain(loop.grainID).singleCrystal->reciprocalLatticeDirection(loop.N));
+        //        auxIO.glidePlanes().emplace_back(loopPlaneKey);
+        //    }
+        //}
                 
         if(outputBinary)
         {
@@ -287,7 +292,6 @@ size_t MicrostructureGeneratorInMem::insertInclusion(const std::vector<VectorDim
         {
             std::cout<<greenBoldColor<<"Writing configuration to "<<configIO.getTxtFilename(fileID)<<defaultColor<<std::endl;
             configIO.writeTxt(fileID); // writes to {configIO.folderName}/evl_{fileID}.txt
-            std::cout<<greenBoldColor<<"Writing aux to "<<auxIO.getTxtFilename(fileID)<<defaultColor<<std::endl;
             auxIO.writeTxt(fileID); // writes to {auxIO.folderName}/ddAux_{fileID}.txt
         }
     }

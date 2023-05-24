@@ -19,6 +19,7 @@
 #include <stdlib.h> // EXIT_SUCCESS, EXIT_FAILURE
 
 #include <filesystem>
+#include <numbers> // std::numbers::pi
 
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
@@ -377,7 +378,27 @@ class DDInterface
       //   return;
       //}
 
-};
+}; // class DDInterface
+
+pybind11::array_t<double, pybind11::array::c_style>
+   nonUniformConvolutionWithAGaussian(
+      const pybind11::array_t<double, pybind11::array::c_style>& times,
+      const pybind11::array_t<double, pybind11::array::c_style>& yy,
+      const ssize_t& smoothedStartIdx,
+      const ssize_t& smoothedEndIdx,
+      const double& sigma,
+      const ssize_t& sigmaCount
+      );
+
+double gaussian( const double& xx, const double& sigma, const double& mu)
+{
+   return (
+         (std::numbers::inv_sqrtpi)/(std::numbers::sqrt2 * sigma)
+         * exp(
+            -0.5 * pow( ( xx - mu) / sigma,2)
+            )
+         );
+}
 
 //   //std::map< size_t, VectorDim> printSlipSystemNormals()
 //   //std::map< std::pair<size_t,size_t>, model::ReciprocalLatticeVector<3>>

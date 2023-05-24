@@ -783,11 +783,11 @@ void ddpy::DDInterface::runGlideSteps( const size_t& stepsToRun)
          return;
       }
 
-      times->push_back( DC->simulationParameters.totalTime
-            * (( DC->poly.b_SI)/( DC->poly.cs_SI))); // [sec]
-      runIDs->push_back( DC->simulationParameters.runID);
-      //times[ measurementNumber] = DC->simulationParameters.totalTime;
-      //runIDs[ measurementNumber] = DC->simulationParameters.runID;
+      //times->push_back( DC->simulationParameters.totalTime
+      //      * (( DC->poly.b_SI)/( DC->poly.cs_SI))); // [sec]
+      //runIDs->push_back( DC->simulationParameters.runID);
+      ////times[ measurementNumber] = DC->simulationParameters.totalTime;
+      ////runIDs[ measurementNumber] = DC->simulationParameters.runID;
 
       // allocate and initialize storage for densities per slip system
       for ( const auto& ss : grain.second.singleCrystal->slipSystems())
@@ -839,7 +839,7 @@ void ddpy::DDInterface::runGlideSteps( const size_t& stepsToRun)
                return;
             }
          }
-         densityPerSlipSystem[ ss->sID]->push_back( 0.0);
+         //densityPerSlipSystem[ ss->sID]->push_back( 0.0);
 
          // instantiate and reserve glissileDensityPerSlipSystem
          if  (! glissileDensityPerSlipSystem.contains( ss->sID))
@@ -886,7 +886,7 @@ void ddpy::DDInterface::runGlideSteps( const size_t& stepsToRun)
                return;
             }
          }
-         glissileDensityPerSlipSystem[ ss->sID]->push_back( 0.0);
+         //glissileDensityPerSlipSystem[ ss->sID]->push_back( 0.0);
 
          // instantiate and reserve sessileDensityPerSlipSystem
          if  (! sessileDensityPerSlipSystem.contains( ss->sID))
@@ -933,7 +933,7 @@ void ddpy::DDInterface::runGlideSteps( const size_t& stepsToRun)
                return;
             }
          }
-         sessileDensityPerSlipSystem[ ss->sID]->push_back( 0.0);
+         //sessileDensityPerSlipSystem[ ss->sID]->push_back( 0.0);
          // density variables have had storage reserved
 
          // if ssID isn't in the map yet, instantiate first step w/0.0
@@ -981,71 +981,71 @@ void ddpy::DDInterface::runGlideSteps( const size_t& stepsToRun)
             }
          }
 
-         slipSystemPlasticDistortion[ ss->sID]->push_back(
-            currentSSPD[ std::pair<int,int>( grainID, ss->sID)] //unitless
-            );
+         //slipSystemPlasticDistortion[ ss->sID]->push_back(
+         //   currentSSPD[ std::pair<int,int>( grainID, ss->sID)] //unitless
+         //   );
 
       } // for ( const auto& ss : grain.second.singleCrystal->slipSystems())
 
-      // initialize densityPerSlipSystem
-      for ( const auto& loop : DC->DN->loops())
-      {
-         if ( loop.second.lock()->slipSystem() != nullptr)
-         {
-            for ( const auto& loopLink : loop.second.lock()->loopLinks())
-            {
-               if ( loopLink->networkLink())
-               {
-                  if ( ! loopLink->networkLink()->hasZeroBurgers())
-                  {
-                     if (( !loopLink->networkLink()->isBoundarySegment())
-                           &&(!loopLink->networkLink()->isGrainBoundarySegment())
-                        )
-                     {
-                        double densityContribution(
-                              loopLink->networkLink()->chord().norm()
-                              /(
-                               loopLink->networkLink()->loopLinks().size()
-                               * ddBase->mesh.volume() // [b^3]
-                               * std::pow( ddBase->poly.b_SI, 2) //[m^2/b^2]
-                               ) // [m^-2];
-                              );
+      //// initialize densityPerSlipSystem
+      //for ( const auto& loop : DC->DN->loops())
+      //{
+      //   if ( loop.second.lock()->slipSystem() != nullptr)
+      //   {
+      //      for ( const auto& loopLink : loop.second.lock()->loopLinks())
+      //      {
+      //         if ( loopLink->networkLink())
+      //         {
+      //            if ( ! loopLink->networkLink()->hasZeroBurgers())
+      //            {
+      //               if (( !loopLink->networkLink()->isBoundarySegment())
+      //                     &&(!loopLink->networkLink()->isGrainBoundarySegment())
+      //                  )
+      //               {
+      //                  double densityContribution(
+      //                        loopLink->networkLink()->chord().norm()
+      //                        /(
+      //                         loopLink->networkLink()->loopLinks().size()
+      //                         * ddBase->mesh.volume() // [b^3]
+      //                         * std::pow( ddBase->poly.b_SI, 2) //[m^2/b^2]
+      //                         ) // [m^-2];
+      //                        );
 
-                        densityPerSlipSystem[
-                           loop.second.lock()->slipSystem()->sID
-                        ]->back() += densityContribution;
+      //                  densityPerSlipSystem[
+      //                     loop.second.lock()->slipSystem()->sID
+      //                  ]->back() += densityContribution;
 
-                        if ( loopLink->networkLink()->isGlissile())
-                        {
-                           glissileDensityPerSlipSystem[
-                              loop.second.lock()->slipSystem()->sID
-                           ]->back() += densityContribution;
-                        }
+      //                  if ( loopLink->networkLink()->isGlissile())
+      //                  {
+      //                     glissileDensityPerSlipSystem[
+      //                        loop.second.lock()->slipSystem()->sID
+      //                     ]->back() += densityContribution;
+      //                  }
 
-                        if ( loopLink->networkLink()->isSessile())
-                        {
-                           sessileDensityPerSlipSystem[
-                              loop.second.lock()->slipSystem()->sID
-                           ]->back() += densityContribution;
-                        }
-                     }
-                  }
-               }
-            }
-         }
-         else
-         {
-               std::cout
-                  << "warning: loop.second.lock()->slipSystem() == nullptr"
-                  << "loop.second.lock()->tag(): "
-                  << loop.second.lock()->tag()<< std::endl
-                  << "loop.second.lock()->glidePlane: "
-                  << loop.second.lock()->glidePlane << std::endl
-                  << "loop.second.lock()->slippedArea(): "
-                  << loop.second.lock()->slippedArea() << std::endl
-                  << std::endl;
-         }
-      } // accumulated density per slip system, initial density skipped
+      //                  if ( loopLink->networkLink()->isSessile())
+      //                  {
+      //                     sessileDensityPerSlipSystem[
+      //                        loop.second.lock()->slipSystem()->sID
+      //                     ]->back() += densityContribution;
+      //                  }
+      //               }
+      //            }
+      //         }
+      //      }
+      //   }
+      //   else
+      //   {
+      //         std::cout
+      //            << "warning: loop.second.lock()->slipSystem() == nullptr"
+      //            << "loop.second.lock()->tag(): "
+      //            << loop.second.lock()->tag()<< std::endl
+      //            << "loop.second.lock()->glidePlane: "
+      //            << loop.second.lock()->glidePlane << std::endl
+      //            << "loop.second.lock()->slippedArea(): "
+      //            << loop.second.lock()->slippedArea() << std::endl
+      //            << std::endl;
+      //   }
+      //} // accumulated density per slip system, initial density skipped
 
       // allocate stressTensorComponents // and strainTensorComponents
       for ( const auto& key : tensorComponentKeys)
@@ -1142,13 +1142,13 @@ void ddpy::DDInterface::runGlideSteps( const size_t& stepsToRun)
          //   }
          //}
 
-         // collect initial stress and strain components
-         stressTensorComponents[ key]->push_back( //[ measurementNumber]
-            stress( key.first-1, key.second-1) // index from 0, not 1
-            );
-         //strainTensorComponents[ key].push_back( //[ measurementNumber]
-         //   strain( key.first, key.second)
+         //// collect initial stress and strain components
+         //stressTensorComponents[ key]->push_back( //[ measurementNumber]
+         //   stress( key.first-1, key.second-1) // index from 0, not 1
          //   );
+         ////strainTensorComponents[ key].push_back( //[ measurementNumber]
+         ////   strain( key.first, key.second)
+         ////   );
       } // for ( const auto& key : tensorComponentKeys)
 
       while ( DC->simulationParameters.runID < endStep)
@@ -2446,6 +2446,101 @@ void ddpy::DDInterface::clearMicrostructureSpecifications()
    return;
 }
 
+pybind11::array_t<double, pybind11::array::c_style>
+   ddpy::nonUniformConvolutionWithAGaussian(
+      const pybind11::array_t<double, pybind11::array::c_style>& timesIn,
+      const pybind11::array_t<double, pybind11::array::c_style>& yyIn,
+      const ssize_t& smoothedStartIdx,
+      const ssize_t& smoothedEndIdx,
+      const double& sigma,
+      const ssize_t& sigmaCount
+      )
+{
+//#ifdef _OPENMP
+//   const size_t nThreads = omp_get_max_threads();
+//#else
+//   const size_t nThreads = 1;
+//#endif
+   auto times = timesIn.unchecked<1>();
+   auto yy = yyIn.unchecked<1>();
+   // check input validity
+   if ( times.shape(0) != yy.shape(0))
+   {
+      std::cout << "error: nonUniformConvolutionWithAGaussian() was given domain and range arrays of differing sizes, "
+         << "times.shape(0) " << times.shape(0)
+         << ", yy.shape(0) " << yy.shape(0)
+         << std::endl; 
+      pybind11::array_t<double, pybind11::array::c_style> tmp;
+      return tmp;
+   }
+   if ( smoothedStartIdx >= smoothedEndIdx)
+   {
+      std::cout << "error: nonUniformConvolutionWithAGaussian() was given"
+        << " smoothedStartIdx " << smoothedStartIdx
+        << " <= smoothedEndIdx " << smoothedEndIdx;
+      pybind11::array_t<double, pybind11::array::c_style> tmp;
+      return tmp;
+   }
+   if ( ( smoothedStartIdx < 0) || ( smoothedStartIdx > yy.shape(0) -1))
+   {
+      std::cout << "error: nonUniformConvolutionWithAGaussian() was given"
+         << " an out of bounds smoothedStartIdx of " << smoothedStartIdx
+         << ", while yy.shape(0) is " << yy.shape(0)
+         << std::endl; 
+      pybind11::array_t<double, pybind11::array::c_style> tmp;
+      return tmp;
+   }
+   if ( ( smoothedEndIdx < 0) || ( smoothedEndIdx > yy.shape(0) -1))
+   {
+      std::cout << "error: nonUniformConvolutionWithAGaussian() was given"
+         << " an out of bounds smoothedEndIdx of " << smoothedStartIdx
+         << ", while yy.shape(0) is " << yy.shape(0)
+         << std::endl; 
+      pybind11::array_t<double, pybind11::array::c_style> tmp;
+      return tmp;
+   }
+
+   // allocate vector to return as output and initialize with 0.0 values
+   pybind11::array_t<double, pybind11::array::c_style> smoothedyy ( times.shape(0));
+   py::buffer_info smoothedyybuf = smoothedyy.request();
+   double *smoothedyyptr = static_cast< double *>( smoothedyybuf.ptr);
+   for ( ssize_t idx=0; idx < smoothedyybuf.shape[0]; ++idx)
+   {
+      smoothedyyptr[idx] = 0.0;
+   }
+
+   //std::shared_ptr< std::vector< double> > smoothedyy;
+   //smoothedyy = std::make_shared< std::vector<double> >( times.shape(0), 0.0);
+   //py::buffer_info smoothedyybuf = smoothedyy->request();
+   //double* smoothedyyptr = static_cast< double *>( smoothedyybuf.ptr);
+   ////smoothedyy->resize( times.size(), 0.0);
+   ////smoothedyy( yy.shape(0), 0.0);
+   //std::vector< double> smoothedyy( times.shape(0), 0.0);
+
+   double sigmaCountSigmas = sigmaCount * sigma;
+   //std::cout << "nThreads: " << nThreads << std::endl; // debug
+   // iterate yIdx from yy[ smoothedStartIdx] to yy[ smoothedEndIdx]
+#ifdef _OPENMP
+#pragma omp parallel for
+#endif
+   for ( ssize_t yIdx = smoothedStartIdx; yIdx < smoothedEndIdx; ++yIdx)
+   {
+      // iterate tIdx over all but the final element of times
+      for ( ssize_t tIdx=0; tIdx < times.size(); ++tIdx)
+      {
+         if ( abs( times[ tIdx] - times[ yIdx]) < sigmaCountSigmas)
+         {
+            //smoothedyy[ yIdx]
+            smoothedyyptr[ yIdx]
+               += yy[ tIdx]
+                  * gaussian( times[ tIdx], sigma, times[ yIdx])
+                  * ( times[ tIdx+1] - times[ tIdx]);
+         }
+      }
+   }
+   return smoothedyy;
+}
+
 PYBIND11_MODULE( ddpy, m) {
    namespace py = pybind11;
    m.doc() = "TODO: revise m.doc() in src/modelib2py.cpp";
@@ -2624,6 +2719,17 @@ PYBIND11_MODULE( ddpy, m) {
       //      &ddpy::DDInterface::getSlipSystemBurgersVectors
       //    )
       ;
+   m.def("nonUniformConvolutionWithAGaussian",
+         &ddpy::nonUniformConvolutionWithAGaussian,
+         //py::kw_only(),
+         py::arg( "x").none(false),
+         py::arg( "y").none(false),
+         py::arg( "startIdx").none(false),
+         py::arg( "endIdx").none(false),
+         py::arg( "sigma").none(false),
+         py::arg( "sigmaCount").none(false)
+        );
+         //"smoothes the input via Gaussian convolution");
    //py::class_<ddpy::DDInterface>( m, "DDInterface")
    //   .def(
    //         py::init(

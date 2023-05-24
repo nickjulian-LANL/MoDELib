@@ -26,16 +26,17 @@
 #include <DislocationDynamicsBase.h>
 #include <MicrostructureSpecification.h>
 //#include <MicrostructureGeneratorInMem.h>
+#include <MicrostructureGeneratorBase.h> // contains struct PolyPoint
 
 
 namespace model
 {
    class MicrostructureGeneratorInMem;
 
-   struct PolyPoint
-   {
-      PeriodicPlanePatch<3>* periodicPlanePatch() const;
-   };
+   //struct PolyPoint // use MicrostructureGeneratorBase::PolyPoint instead
+   //{
+   //   std::shared_ptr<PeriodicPlanePatch<3>> periodicPlanePatch() const;
+   //};
 
    struct MicrostructureGeneratorBaseInMem
    {
@@ -52,7 +53,7 @@ namespace model
       const std::string style;
       const std::string tag;
 
-      MicrostructureGeneratorBaseInMem( 
+      MicrostructureGeneratorBaseInMem(
          const std::shared_ptr<MicrostructureSpecification>& microSpec
       );
 
