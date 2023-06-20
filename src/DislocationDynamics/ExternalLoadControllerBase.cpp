@@ -34,10 +34,16 @@ namespace model
         /* init list */,strainmultimachinestiffness(Eigen::Matrix<double,voigtSize,voigtSize>::Zero())
         {
             std::cout<<greenBoldColor<<"Reading ExternalLoadController file: "<<inputFileName<<defaultColor<<std::endl;
-
-            assert((ExternalStressRate-ExternalStressRate.transpose()).norm()<DBL_EPSILON && "ExternalStressRate is not symmetric.");
-            assert((ExternalStrainRate-ExternalStrainRate.transpose()).norm()<DBL_EPSILON && "ExternalStrainRate is not symmetric.");
-
+            if((ExternalStressRate-ExternalStressRate.transpose()).norm()>DBL_EPSILON)
+            {
+                throw std::runtime_error("ExternalStressRate is not symmetric.");
+            }
+            if((ExternalStrainRate-ExternalStrainRate.transpose()).norm()>DBL_EPSILON)
+            {
+                throw std::runtime_error("ExternalStressRate is not symmetric.");
+            }
+//            assert((ExternalStressRate-ExternalStressRate.transpose()).norm()<DBL_EPSILON && "ExternalStressRate is not symmetric.");
+//            assert((ExternalStrainRate-ExternalStrainRate.transpose()).norm()<DBL_EPSILON && "ExternalStrainRate is not symmetric.");
         }
         
         /**************************************************************************/

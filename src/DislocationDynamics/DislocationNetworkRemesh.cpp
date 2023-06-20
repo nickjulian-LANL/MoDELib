@@ -17,8 +17,8 @@ namespace model
     template <typename DislocationNetworkType>
     DislocationNetworkRemesh<DislocationNetworkType>::DislocationNetworkRemesh(DislocationNetworkType& DN_in):
     /* init */ DN(DN_in)
-    /* init */,Lmax(TextFileParser(DN.simulationParameters.traitsIO.ddFile).readScalar<double>("Lmax",true)*minMeshSize(DN.mesh))
-    /* init */,Lmin(TextFileParser(DN.simulationParameters.traitsIO.ddFile).readScalar<double>("Lmin",true)*minMeshSize(DN.mesh))
+    /* init */,Lmax(TextFileParser(DN.simulationParameters.traitsIO.ddFile).readScalar<double>("Lmax",true))
+    /* init */,Lmin(TextFileParser(DN.simulationParameters.traitsIO.ddFile).readScalar<double>("Lmin",true))
     /* init */,relativeAreaThreshold(TextFileParser(DN.simulationParameters.traitsIO.ddFile).readScalar<double>("relativeAreaThreshold",true))
     /* init */,remeshFrequency(TextFileParser(DN.simulationParameters.traitsIO.ddFile).readScalar<int>("remeshFrequency",true))
     {
@@ -74,10 +74,11 @@ namespace model
         for (const auto &loopNode : DN.loopNodes())
         {
             //                std::cout<<"node "<<node.second->sID<<" "<<node.second->isSimpleBoundaryNode()<<" "<<node.second->isSimpleGrainBoundaryNode()<<std::endl;
-            if (!loopNode.second.lock()->networkNode->masterNode && removedLoopNodes.find(loopNode.second.lock().get())==removedLoopNodes.end())
+//            if (!loopNode.second.lock()->networkNode->masterNode && removedLoopNodes.find(loopNode.second.lock().get())==removedLoopNodes.end())
+            if (removedLoopNodes.find(loopNode.second.lock().get())==removedLoopNodes.end())
             {
                 
-                const auto isRemovableLoopNode(loopNode.second.lock()->isRemovable(Lmin, relativeAreaThreshold));
+                const auto isRemovableLoopNode(loopNode.second.lock()->isRemovable(Lmin, Lmax, relativeAreaThreshold));
                 // std::cout<<" Trying to remove "<<loopNode.second.lock()->tag()<<" => "<<isRemovableLoopNode.first<<std::endl;
                 if (isRemovableLoopNode.first)
                 {
@@ -100,7 +101,7 @@ namespace model
                         }
 
                         // std::cout<<" Starting to remove the loop Node "<<std::endl;
-
+//                        std::cout<<"Removing "<<loopNode.second.lock()->tag()<<std::endl;
                         DN.removeLoopNode(loopNode.second.lock()->sID);
                         // std::cout<<" Removed "<<loopNode.second.lock()->tag()<<std::endl;
 
@@ -218,17 +219,17 @@ namespace model
         {
             const auto sharedLink(linkIter.second.lock());
             
-            if (!sharedLink->hasZeroBurgers() && !sharedLink->isSessile() && !sharedLink->isBoundarySegment() && !sharedLink->isGrainBoundarySegment() && !sharedLink->isVirtualBoundarySegment())
+            if (!sharedLink->hasZeroBurgers() && !sharedLink->isSessile() && !sharedLink->isBoundarySegment() && !sharedLink->isGrainBoundarySegment())
             {
                 const VectorDim chord(sharedLink->chord()); // this is sink->get_P() - source->get_P()
                 const double chordLength(chord.norm());
                 
-                if (sharedLink->source->loopNodes().size() > 1 && sharedLink->sink->loopNodes().size() > 1
-                    /*&& chord.dot(dv)>vTolexp*chordLength*dv.norm()*/
-                    && chordLength > 3.0 * Lmin)
-                { // also expands a straight line to generate glissile segment
-                    toBeExpanded.insert(std::make_pair(sharedLink->source->sID, sharedLink->sink->sID));
-                }
+//                if (sharedLink->source->loopNodes().size() > 1 && sharedLink->sink->loopNodes().size() > 1
+//                    /*&& chord.dot(dv)>vTolexp*chordLength*dv.norm()*/
+//                    && chordLength > 3.0 * Lmin)
+//                { // also expands a straight line to generate glissile segment
+//                    toBeExpanded.insert(std::make_pair(sharedLink->source->sID, sharedLink->sink->sID));
+//                }
                 
                 // Expand segments shorter than Lmax
                 if (chordLength > Lmax)
@@ -257,6 +258,8 @@ namespace model
                 {
                     
                     const auto newNetNode(DN.networkNodes().create(expandPoint, 0.5 * (source->get_V() + sink->get_V()), 0.5 * (source->velocityReduction() + sink->velocityReduction())));
+//                    std::cout<<"Expanding "<<Lij->tag()<<std::endl;
+
                     DN.expandNetworkLink(Lij, newNetNode);
                     Nexpanded++;
                 }
@@ -567,12 +570,12 @@ namespace model
         std::cout<<magentaColor<<" ["<<(std::chrono::duration<double>(std::chrono::system_clock::now()-t0)).count()<<" sec]"<<defaultColor<<std::endl;
     }
     
-    /**************************************************************************/
-    template <typename DislocationNetworkType>
-    double DislocationNetworkRemesh<DislocationNetworkType>::minMeshSize(const SimplicialMesh<dim> &mesh)
-    {
-        return std::min(mesh.xMax(0) - mesh.xMin(0), std::min(mesh.xMax(1) - mesh.xMin(1), mesh.xMax(2) - mesh.xMin(2)));
-    }
+//    /**************************************************************************/
+//    template <typename DislocationNetworkType>
+//    double DislocationNetworkRemesh<DislocationNetworkType>::minMeshSize(const SimplicialMesh<dim> &mesh)
+//    {
+//        return std::min(mesh.xMax(0) - mesh.xMin(0), std::min(mesh.xMax(1) - mesh.xMin(1), mesh.xMax(2) - mesh.xMin(2)));
+//    }
     
     template class DislocationNetworkRemesh<DislocationNetwork<3,0>>;
 

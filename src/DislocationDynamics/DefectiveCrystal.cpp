@@ -186,13 +186,14 @@ namespace model
                 DN->updateGeometry();
                 updateLoadControllers(simulationParameters.runID, false);
                 const double maxVelocity(getMaxVelocity());
-                DN->assembleAndSolveGlide(simulationParameters.runID, maxVelocity);
+                DN->assembleGlide(simulationParameters.runID, maxVelocity);
+                DN->storeSingleGlideStepDiscreteEvents(simulationParameters.runID);
+                DN->solveGlide(simulationParameters.runID);
                 simulationParameters.dt=DN->timeIntegrator.getGlideTimeIncrement(*DN); // TO DO: MAKE THIS std::min between DN and CrackSystem
                 DN->io().output(simulationParameters.runID);
-                DN->storeSingleGlideStepDiscreteEvents(simulationParameters.runID);
                 DN->moveGlide(simulationParameters.dt);
                 DN->executeSingleGlideStepDiscreteEvents(simulationParameters.runID);
-                if (true)
+                if (DN->capMaxVelocity)
                 {
                     std::cout<<redBoldColor<<"( "<<(DislocationNode<dim,corder>::totalCappedNodes)<<" total nodes capped "<<defaultColor<<std::endl;
                     std::cout<<redBoldColor<<", "<<(double(DislocationNode<dim,corder>::totalCappedNodes)/double(DN->networkNodes().size()))<<" fraction of nodes capped "
