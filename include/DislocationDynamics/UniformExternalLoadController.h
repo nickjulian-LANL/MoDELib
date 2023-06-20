@@ -32,7 +32,6 @@ namespace model
         
         static constexpr int dim=DefectiveCrystalType::dim;
         static constexpr int voigtSize=dim*(dim+1)/2;
-        Eigen::Matrix<size_t,voigtSize,2>     voigtorder;
         typedef Eigen::Matrix<double,dim,dim> MatrixDim;
         typedef Eigen::Matrix<double,dim,1>   VectorDim;
         
@@ -60,9 +59,6 @@ namespace model
         const bool enable;
         const int relaxSteps;
         
-        MatrixDim ExternalStress0;
-        MatrixDim ExternalStrain0;
-        
     public:
         
         UniformExternalLoadController(const DefectiveCrystalType& _DN,const long int& runID) :
@@ -74,17 +70,14 @@ namespace model
         /* init list */,last_update_time(0.0)
         /* init list */,enable(TextFileParser(this->inputFileName).readScalar<int>("enable",true))
         /* init list */,relaxSteps(TextFileParser(this->inputFileName).readScalar<int>("relaxSteps",true))
-        /* init list */,ExternalStress0(TextFileParser(this->inputFileName).readMatrix<double>("ExternalStress0",dim,dim,true))
-        /* init list */,ExternalStrain0(TextFileParser(this->inputFileName).readMatrix<double>("ExternalStrain0",dim,dim,true))
         {
             std::cout<<greenColor<<"Initializing UniformExternalLoadController at runID="<<runID<<defaultColor<<std::endl;
-            
-            
             
             double nu=DN.poly.nu;
             std::cout<<" nu="<<nu<<std::endl;
             this->nu_use=nu/(1.0+nu)/2.0;
             this->lambda=2.0*nu/(1.0-2.0*nu);
+            
             
             TextFileParser parser(this->inputFileName);
             assert((ExternalStress0-ExternalStress0.transpose()).norm()<DBL_EPSILON && "ExternalStress0 is not symmetric.");
@@ -93,10 +86,6 @@ namespace model
             assert((this->ExternalStrainRate-this->ExternalStrainRate.transpose()).norm()<DBL_EPSILON && "ExternalStrainRate is not symmetric.");
             
             
-            double nu=DN.poly.nu;
-            std::cout<<" nu="<<nu<<std::endl;
-            this->nu_use=nu/(1.0+nu)/2.0;
-            this->lambda=2.0*nu/(1.0-2.0*nu);
 
             // initilize the default voigt order
             size_t vnum=0;

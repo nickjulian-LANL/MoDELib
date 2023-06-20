@@ -18,8 +18,8 @@
 #include <TextFileParser.h>
 
 //#include <UniqueOutputFile.h>
-#include <cmath>
-#include <cfloat>
+//#include <cmath>
+//#include <cfloat>
 //#include <Material.h>
 //#include <EigenDataReader.h>
 //#include <IDreader.h>
@@ -61,24 +61,6 @@ namespace model
                 virtual MatrixDim elasticstrain(const MatrixDim& _externalStress,const double& nu_use) const = 0;
                 virtual MatrixDim stressconsidermachinestiffness(const MatrixDim& S_strain,const MatrixDim& S_stress) const = 0;
 
-        static constexpr int voigtSize=dim*(dim+1)/2;
-        //External stress control parameter
-        MatrixDim ExternalStress;
-        MatrixDim ExternalStressRate;
-        MatrixDim ExternalStrain;
-        //External strain control parameter
-        MatrixDim ExternalStrainRate;
-        MatrixDim plasticStrain;
-        //finite machine stiffness effect
-        Eigen::Matrix<double,1,voigtSize> MachineStiffnessRatio;    //0 is stress control; infinity is pure strain control.
-        
-        double lambda;  //unit is mu, lambda=2*v/(1-2*v)
-        double nu_use;
-        Eigen::Matrix<double,voigtSize,voigtSize> stressmultimachinestiffness;
-        Eigen::Matrix<double,voigtSize,voigtSize> strainmultimachinestiffness;
-
-        virtual MatrixDim elasticstrain(const MatrixDim& _externalStress,const double& nu_use) const = 0;
-        virtual MatrixDim stressconsidermachinestiffness(const MatrixDim& S_strain,const MatrixDim& S_stress) = 0;
         /**************************************************************************/
         ExternalLoadControllerBase(const std::string& _inputFileName);
         
