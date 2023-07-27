@@ -45,10 +45,10 @@ namespace model
         
                 //External stress control parameter
         
-        const MatrixDim ExternalStress0;
-        const MatrixDim ExternalStressRate;
-        const MatrixDim ExternalStrain0;
-        const MatrixDim ExternalStrainRate;
+        MatrixDim ExternalStress0;
+        MatrixDim ExternalStressRate;
+        MatrixDim ExternalStrain0;
+        MatrixDim ExternalStrainRate;
 
         
                 MatrixDim ExternalStress;
