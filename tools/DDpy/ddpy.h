@@ -390,6 +390,15 @@ pybind11::array_t<double, pybind11::array::c_style>
       const ssize_t& sigmaCount
       );
 
+pybind11::array_t<double, pybind11::array::c_style>
+   nonUniformWeightByAGaussian(
+      const pybind11::array_t<double, pybind11::array::c_style>& times,
+      const pybind11::array_t<double, pybind11::array::c_style>& yy,
+      const pybind11::array_t<ssize_t, pybind11::array::c_style>& runIDs,
+      const double& sigma,
+      const ssize_t& sigmaCount
+      );
+
 double gaussian( const double& xx, const double& sigma, const double& mu)
 {
    return (

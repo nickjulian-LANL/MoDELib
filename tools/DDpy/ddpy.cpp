@@ -2530,7 +2530,6 @@ pybind11::array_t<double, pybind11::array::c_style>
       {
          if ( abs( times[ tIdx] - times[ yIdx]) < sigmaCountSigmas)
          {
-            //smoothedyy[ yIdx]
             smoothedyyptr[ yIdx]
                += yy[ tIdx]
                   * gaussian( times[ tIdx], sigma, times[ yIdx])
@@ -2540,6 +2539,93 @@ pybind11::array_t<double, pybind11::array::c_style>
    }
    return smoothedyy;
 }
+
+pybind11::array_t<double, pybind11::array::c_style>
+   ddpy::nonUniformWeightByAGaussian(
+      const pybind11::array_t<double, pybind11::array::c_style>& timesIn,
+      const pybind11::array_t<double, pybind11::array::c_style>& yyIn,
+      const pybind11::array_t<ssize_t, pybind11::array::c_style>& IdxsIn,
+      const double& sigma,
+      const ssize_t& sigmaCount
+      )
+{
+   auto times = timesIn.unchecked<1>();
+   auto yy = yyIn.unchecked<1>();
+   auto Idxs = IdxsIn.unchecked<1>();
+   double sigmaCountSigmas = sigmaCount * sigma; // in same units as times
+   // check input validity
+   if ( times.shape(0) != yy.shape(0))
+   {
+      std::cout << "error: nonUniformWeightByAGaussian() was given domain and range arrays of differing sizes, "
+         << "times.shape(0) " << times.shape(0)
+         << ", yy.shape(0) " << yy.shape(0)
+         << "; returning an empty array"
+         << std::endl; 
+      pybind11::array_t<double, pybind11::array::c_style> tmp;
+      return tmp;
+   }
+   ssize_t tmpIdx;
+   for ( ssize_t IdxsIdx=0; IdxsIdx < Idxs.shape(0); ++IdxsIdx)
+   {
+      tmpIdx = Idxs[ IdxsIdx];
+      if (( tmpIdx < 0) || (tmpIdx > yy.shape(0) -1))
+      {
+         std::cout << "error: nonUniformWeightByAGaussian() was given"
+            << " an out of bounds of index" << tmpIdx
+            << ", while yy.shape(0) is " << yy.shape(0)
+            << "; returning an empty array"
+            << std::endl;
+         pybind11::array_t<double, pybind11::array::c_style> tmp;
+         return tmp;
+      }
+      if (
+            abs( times[tmpIdx] - times[0]) < sigmaCountSigmas
+            ||
+            abs( times[tmpIdx] - times[times.shape(0)-1]) < sigmaCountSigmas
+         )
+      {
+         std::cout << "error: nonUniformWeightByAGaussian() was given an index "
+            << tmpIdx
+            << " to a time that is within sigmaCount * sigma"
+            << sigmaCount << "*" << sigma
+            << " from the first or last time value "
+            << " times[0] " << times[0] << ", times[times.shape(0)-1] " 
+            << times[times.shape(0)-1]
+            << "; returning an empty array"
+            << std::endl;
+         pybind11::array_t<double, pybind11::array::c_style> tmp;
+         return tmp;
+      }
+   }
+   pybind11::array_t<double, pybind11::array::c_style> weightedValues( Idxs.shape(0));
+   py::buffer_info weightedValuesbuf = weightedValues.request();
+   double *weightedValuesptr = static_cast< double *>( weightedValuesbuf.ptr);
+   for ( ssize_t idx=0; idx < weightedValuesbuf.shape[0]; ++idx)
+   {
+      weightedValuesptr[idx] = 0.0;
+   }
+   // TODO: adapt lines 2526-2540 to only weight around indices in Idxs
+   ssize_t wvIdx; wvIdx=0; // weightedValues has the same length as Idxs
+   ssize_t centerIdx;
+   for ( ssize_t IdxsIdx=0; IdxsIdx < Idxs.shape(0); ++IdxsIdx)
+   {
+      centerIdx = Idxs[ IdxsIdx];
+      // iterate neighIdx over all but the final element of times
+      for ( ssize_t neighIdx=0; neighIdx < times.size()-1; ++neighIdx)
+      {
+         if ( abs( times[ neighIdx] - times[ centerIdx]) < sigmaCountSigmas)
+         {
+            weightedValuesptr[ wvIdx]
+               += yy[ neighIdx]
+                  * gaussian( times[ neighIdx], sigma, times[ centerIdx])
+                  * ( times[ neighIdx+1] - times[ neighIdx]);
+         }
+      }
+      ++wvIdx;
+   }
+   return weightedValues;
+}
+
 
 PYBIND11_MODULE( ddpy, m) {
    namespace py = pybind11;
@@ -2730,6 +2816,15 @@ PYBIND11_MODULE( ddpy, m) {
          py::arg( "sigmaCount").none(false)
         );
          //"smoothes the input via Gaussian convolution");
+   m.def("nonUniformWeightByAGaussian",
+         &ddpy::nonUniformWeightByAGaussian,
+         //py::kw_only(),
+         py::arg( "x").none(false),
+         py::arg( "y").none(false),
+         py::arg( "indices").none(false),
+         py::arg( "sigma").none(false),
+         py::arg( "sigmaCount").none(false)
+        );
    //py::class_<ddpy::DDInterface>( m, "DDInterface")
    //   .def(
    //         py::init(
