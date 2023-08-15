@@ -5,7 +5,7 @@ close all
 format long
 
 alignToSlipSystem0=0;
-lattice='bcc';
+lattice='fcc';
 
 if(alignToSlipSystem0)
 switch lattice
@@ -53,7 +53,7 @@ L(:,i)=A*Nr;
 Ln(i)=norm(L(:,i));
 end
 
-scaling=4000;
+scaling=1000;
 T=round(scaling*diag(1./Ln))
 
 %T=[1000 0 0
@@ -69,6 +69,7 @@ fID=fopen('polycrystal.txt','w');
 fprintf(fID,['materialFile=../../../MaterialsLibrary/' material '.txt; \n']);
 fprintf(fID,'enablePartials=0; \n');
 fprintf(fID,'absoluteTemperature = 300; # [K] simulation temperature \n');
+fprintf(fID,'dislocationMobilityType=default; # default or FCC,BCC,HEXbasal,HEXprismatic,HEXpyramidal \n');
 fprintf(fID,'meshFile=../../../MeshLibrary/unitCube.msh; \n');
 fprintf(fID,'C2G1=');
 fprintf(fID,'%1.15f ',C2G1(1,:));
