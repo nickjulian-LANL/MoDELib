@@ -17,33 +17,29 @@
 
 namespace model
 {
-   template <int _dim>
-   DislocationDynamicsBase<_dim>::DislocationDynamicsBase( const std::string& folderName) :
-      /* init */ ddFolderName( folderName)
-      /* init */,simulationParameters( ddFolderName)
-      /* init */,periodicFaceIDs(
-            TextFileParser(
-               simulationParameters.traitsIO.polyFile
-               ).template readSet<int>("periodicFaceIDs",true))
-      /* init */,mesh(
-            simulationParameters.traitsIO.meshFile,
-            TextFileParser(
-               simulationParameters.traitsIO.polyFile
-               ).readMatrix<double>("A",3,3,true),
-            TextFileParser(
-               simulationParameters.traitsIO.polyFile
-               ).readMatrix<double>("x0",1,3,true).transpose(),
-            periodicFaceIDs
-            )
-        /* init */,poly(simulationParameters.traitsIO.polyFile,mesh)
-   {
-      if(!mesh.simplices().size())
-      {
-         throw std::runtime_error("Mesh is empty");
-      }
-   }
+template <int _dim>
+DislocationDynamicsBase<_dim>::DislocationDynamicsBase( const std::string& folderName) :
+/* init */ simulationParameters( folderName)
+/* init */,mesh(simulationParameters.traitsIO.meshFile,
+                TextFileParser(
+                               simulationParameters.traitsIO.polyFile
+                               ).readMatrix<double>("A",_dim,_dim,true),
+                TextFileParser(
+                               simulationParameters.traitsIO.polyFile
+                               ).readMatrix<double>("x0",1,_dim,true).transpose(),
+                simulationParameters.periodicFaceIDs
+                )
+/* init */,poly(simulationParameters.traitsIO.polyFile,mesh)
+/* init */,glidePlaneFactory(poly)
+/* init */,periodicGlidePlaneFactory(poly,glidePlaneFactory)
+{
+    if(!mesh.simplices().size())
+    {
+        throw std::runtime_error("Mesh is empty");
+    }
+}
 
-template class DislocationDynamicsBase <3>;
+template struct DislocationDynamicsBase<3>;
 
 } // namespace model
 #endif

@@ -25,8 +25,6 @@ namespace model
     struct DefectiveCrystalParameters
     {
         
-//        enum SimulationType{FINITE_NO_FEM=0,FINITE_FEM=1,PERIODIC_IMAGES=2,PERIODIC_FEM=3};
-
         const DDtraitsIO traitsIO;
         const int simulationType;
         const bool useDislocations;
@@ -39,7 +37,8 @@ namespace model
         const std::string externalLoadControllerName;
         const double virtualSegmentDistance;
         const bool use_stochasticForce;
-        
+        const std::set<int> periodicFaceIDs;
+
         long int runID;
         double totalTime;
         double dt;
