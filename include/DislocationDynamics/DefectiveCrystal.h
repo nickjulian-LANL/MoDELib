@@ -2,7 +2,6 @@
  *
  * Copyright (C) 2011 by Giacomo Po <gpo@ucla.edu>.
  * Copyright (C) 2017 by Yinan Cui <cuiyinan@ucla.edu>.
- *
  * model is distributed without any warranty under the
  * GNU General Public License (GPL) v2 <http://www.gnu.org/licenses/>.
  */
@@ -19,6 +18,8 @@
 #include <DislocationDynamicsBase.h>
 #include <CrackSystem.h>
 #include <UniformExternalLoadController.h>
+#include <DislocationNetwork.h>
+#include <BVPsolver.h>
 
 namespace model
 {

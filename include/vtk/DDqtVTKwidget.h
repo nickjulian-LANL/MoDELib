@@ -24,7 +24,8 @@
 //#include <DDFieldWidget.h>
 #include <SimplicialMeshActor.h>
 #include <DDconfigVtk.h>
-#include <DDtraitsIO.h>
+//#include <DDtraitsIO.h>
+#include <DislocationDynamicsBase.h>
 #include <GlidePlaneFactory.h>
 #include <PeriodicGlidePlaneFactory.h>
 
@@ -54,19 +55,11 @@ private:
     
 
 public:
-    
-//    const std::string workingDir;
-    const DDtraitsIO traitsIO;
+        
+    DislocationDynamicsBase<3> ddBase;
     QLabel* workingDirLabel;
-    SimplicialMesh<3> mesh;
-    Polycrystal<3> poly;
-    GlidePlaneFactory<3> glidePlaneFactory;
-    PeriodicGlidePlaneFactory<3> periodicGlidePlaneFactory;
     SimplicialMeshActor* meshActor;
     DDconfigVtk* ddConfigVtk;
-//    DDFieldWidget* ddField;
-//    ChartActor* chartActor;
-    
     
     DDqtVTKwidget(QWidget *parent);
     

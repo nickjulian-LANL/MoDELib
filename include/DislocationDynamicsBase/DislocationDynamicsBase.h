@@ -19,36 +19,29 @@
 #include <DefectiveCrystalParameters.h>
 #include <SimplicialMesh.h>
 #include <Polycrystal.h>
-//#include <CrackSystem.h>
-#include <DislocationDynamicsModule.h>
-//#include <FEMnodeEvaluation.h>
-//#include <DislocationNetwork.h>
+#include <GlidePlaneFactory.h>
+#include <PeriodicGlidePlaneFactory.h>
 
 
 namespace model
 {
-   template <int _dim> // corder isn't used until there's a DislocationNode
-   class DislocationDynamicsBase
-   {
-      // desired members:
-      //  those common to MicrostructureGenerator and DefectiveCrystal
-      //  so that their members can be references to those in this class
+    template <int _dim>
+    struct DislocationDynamicsBase
+    {
+        // desired members:
+        //  those common to MicrostructureGenerator and DefectiveCrystal
+        //  so that their members can be references to those in this class
+        static constexpr int dim=_dim;
+        typedef DislocationDynamicsBase<dim> DislocationDynamicsBaseType;
 
-      public:
-
-         // constructor
-         DislocationDynamicsBase( const std::string& folderName);
-
-         static constexpr int dim=_dim;
-         typedef DislocationDynamicsBase<dim> DislocationDynamicsBaseType;
-
-         const std::string ddFolderName;
-         DefectiveCrystalParameters simulationParameters;
-         const std::set<int> periodicFaceIDs;
-         const SimplicialMesh<dim> mesh;
-         const Polycrystal<dim> poly;
-
-   }; // class DislocationDynamicsBase
-
+        
+        DislocationDynamicsBase( const std::string& folderName);
+        DefectiveCrystalParameters simulationParameters;
+        const SimplicialMesh<dim> mesh;
+        const Polycrystal<dim> poly;
+        GlidePlaneFactory<3> glidePlaneFactory;
+        PeriodicGlidePlaneFactory<3> periodicGlidePlaneFactory;
+        
+    }; // class DislocationDynamicsBase
 } // namespace model
 #endif
