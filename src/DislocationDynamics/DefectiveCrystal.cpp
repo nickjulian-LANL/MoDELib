@@ -131,7 +131,7 @@ namespace model
         template <int _dim, short unsigned int corder>
         DefectiveCrystal<_dim,corder>::DefectiveCrystal( DislocationDynamicsBase<3>& ddBase) :
         /* init */ simulationParameters( ddBase.simulationParameters)
-        /* init */,periodicFaceIDs( ddBase.periodicFaceIDs)
+        /* init */,periodicFaceIDs( simulationParameters.periodicFaceIDs)
         /* init */,mesh( ddBase.mesh)
         /* init */,periodicShifts(mesh.periodicShifts(simulationParameters.periodicImageSize))
         /* init */,poly( ddBase.poly)

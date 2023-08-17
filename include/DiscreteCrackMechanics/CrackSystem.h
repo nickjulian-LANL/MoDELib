@@ -11,6 +11,7 @@
 #define model_CrackSystem_H_
 
 #include <Eigen/Dense>
+#include <FEMnodeEvaluation.h>
 
 namespace model
 {
