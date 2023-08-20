@@ -48,9 +48,12 @@ namespace model
       const std::vector<int> prismaticLoopSlipSystemIDs;
       const Eigen::Matrix<double, Eigen::Dynamic,3> prismaticLoopCenters;
       const std::vector<double> prismaticLoopRadii;
+      const std::vector<double> prismaticLoopSteps;
       const std::map<int, double> prismaticLoopTargetDensitiesPerSlipSystem;
       const double prismaticLoopRadiusDistributionMean;
       const double prismaticLoopRadiusDistributionStd;
+      const double prismaticLoopStepDistributionMean;
+      const double prismaticLoopStepDistributionStd;
 
       MicrostructureSpecification(
             const std::string& microstructureTypeIn,
@@ -80,9 +83,12 @@ namespace model
             const std::vector<int>& prismaticLoopSlipSystemIDs,
             const Eigen::Matrix<double, Eigen::Dynamic,3>& prismaticLoopCentersIn, // # each row in the matrix is a the center of the loop
             const std::vector<double>& prismaticLoopRadiiIn,
+            const std::vector<double>& prismaticLoopStepsIn,
             const std::map<int, double>& prismaticLoopTargetDensitiesPerSlipSystemIn,
             const double& prismaticLoopRadiiMeanIn,
-            const double& prismaticLoopRadiiStdIn
+            const double& prismaticLoopRadiiStdIn,
+            const double& prismaticLoopStepMeanIn,
+            const double& prismaticLoopStepStdIn
             );// :
       //   microstructureType( microstructureTypeIn)
       //   ,style( styleIn)

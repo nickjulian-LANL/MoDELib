@@ -309,12 +309,17 @@ def main():
     prismaticLoopRadiusMean = 4e-8
     prismaticLoopRadiusStd = 1e-8
 
+    prismaticLoopStepMean = 10
+    prismaticLoopStepStd = 1
+
     dc.clearMicrostructureSpecifications()
     dc.specifyPrismaticLoopDensitiesPerSlipSystem(
             tag=tag,
-            prismaticLoopDensitiesPerSlipSystem=prismaticLoopDensitiesPerSlipSystem ,
+            prismaticLoopDensitiesPerSlipSystem=prismaticLoopDensitiesPerSlipSystem,
             prismaticLoopRadiusMean=prismaticLoopRadiusMean,
-            prismaticLoopRadiusStd=prismaticLoopRadiusStd
+            prismaticLoopRadiusStd=prismaticLoopRadiusStd,
+            prismaticLoopStepMean=prismaticLoopStepMean,
+            prismaticLoopStepStd=prismaticLoopStepStd
             )
 
     print(f"trying to run in {outputFolder}")
@@ -345,12 +350,17 @@ def main():
     prismaticLoopRadiusMean = 4e-8
     prismaticLoopRadiusStd = 1e-8
 
+    prismaticLoopStepMean = 10
+    prismaticLoopStepStd = 1
+
     dc.clearMicrostructureSpecifications()
     dc.specifyPrismaticLoopDensity(
             tag=tag,
             prismaticLoopDensity=prismaticLoopDensity,
             prismaticLoopRadiusMean=prismaticLoopRadiusMean,
-            prismaticLoopRadiusStd=prismaticLoopRadiusStd
+            prismaticLoopRadiusStd=prismaticLoopRadiusStd,
+            prismaticLoopStepMean=prismaticLoopStepMean,
+            prismaticLoopStepStd=prismaticLoopStepStd
             )
 
     print(f"trying to run in {outputFolder}")
@@ -377,7 +387,7 @@ def main():
     prismaticLoopRadii = np.array([ 1.0e-8, 3.0e-8])
     prismaticLoopCenters = np.array([[ 50, 100, 150],
                             [ 150, 100, 50]])# [m]
-
+    prismaticLoopSteps = np.array([ 5, 20])
 
     print(f"dc.setCurrentStep(0)")
     dc.setCurrentStep(0)
@@ -385,12 +395,16 @@ def main():
     prismaticLoopRadiusMean = 4e-8
     prismaticLoopRadiusStd = 1e-8
 
+    prismaticLoopStepMean = 10
+    prismaticLoopStepStd = 1
+
     dc.clearMicrostructureSpecifications()
     dc.specifyPrismaticLoops(
             tag=tag,
             slipSystemIDs=ssIDs,
             prismaticLoopRadii=prismaticLoopRadii,
-            prismaticLoopCenters=prismaticLoopCenters  
+            prismaticLoopCenters=prismaticLoopCenters,
+            prismaticLoopSteps=prismaticLoopSteps
             )
 
     print(f"trying to run in {outputFolder}")

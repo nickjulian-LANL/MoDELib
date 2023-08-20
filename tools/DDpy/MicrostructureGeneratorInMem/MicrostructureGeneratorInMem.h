@@ -24,15 +24,11 @@
 #include <Polycrystal.h>
 #include <PolycrystallineMaterialBase.h>
 #include <LatticeModule.h>
-//#include <PlaneMeshIntersection.h>
-//#include <DislocationNodeIO.h>
-//#include <DislocationLoopIO.h>
-//#include <DislocationLoopLinkIO.h>
-//#include <DislocationLoopNodeIO.h>
 #include <DDtraitsIO.h>
 #include <DDconfigIO.h>
 #include <DDauxIO.h>
 
+#include <DislocationDynamicsBase.h>
 #include <DislocationLinkingNumber.h>
 #include <TextFileParser.h>
 #include <DislocationInjector.h>
@@ -53,27 +49,29 @@ namespace model
         typedef typename  MicrostructureGeneratorBaseInMem::VectorDimD VectorDimD;
         typedef typename  MicrostructureGeneratorBaseInMem::DislocationLoopType DislocationLoopType;
 
-        const DDtraitsIO& traitsIO;
+        //const DDtraitsIO& traitsIO;
         DDconfigIO<3> configIO;
         DDauxIO<3> auxIO;
 
     public:
         
+        DislocationDynamicsBase<3>& ddBase;
         const bool outputBinary;
-        const std::set<int> periodicFaceIDs; // TODO: should this be a reference?
-        const SimplicialMesh<3>& mesh;
+        //const std::set<int> periodicFaceIDs; // TODO: should this be a reference?
+        //const SimplicialMesh<3>& mesh;
         const double minSize;
         const double maxSize;
-        const Polycrystal<3>& poly;
-        GlidePlaneFactory<3> glidePlaneFactory;
-        PeriodicGlidePlaneFactory<3> periodicGlidePlaneFactory;
+        //const Polycrystal<3>& poly;
+        //GlidePlaneFactory<3> glidePlaneFactory;
+        //PeriodicGlidePlaneFactory<3> periodicGlidePlaneFactory;
         std::map<VectorDimD,size_t,CompareVectorsByComponent<double,dim,float>> uniqueNetworkNodeMap;
         
         MicrostructureGeneratorInMem(
-            const DislocationDynamicsBase<3>::DislocationDynamicsBaseType&,
+            DislocationDynamicsBase<3>::DislocationDynamicsBaseType&,
             const std::list<std::shared_ptr<MicrostructureSpecification>> microstructureSpecifications
               );
         
+        const DDtraitsIO& traits() const;
         const DDconfigIO<3>& config() const;
         const DDauxIO<3>& aux() const;
         size_t insertLoop(const VectorDimD& b,const VectorDimD& unitNormal,const VectorDimD& P0,const size_t& grainID,const DislocationLoopType& loopType);
@@ -81,7 +79,7 @@ namespace model
         std::vector<size_t> insertLoopLinks(const size_t& loopID,const std::vector<size_t>& loopNodeIDs);
         size_t insertNetworkNode(const VectorDimD& networkNodePos);
         size_t insertInclusion(const VectorDimD& pos,const double& R, const Eigen::Matrix<double,dim,dim>& eT, const double& vrc,const int&type);
-        size_t insertInclusion(const std::vector<VectorDimD>& polyNodes,const std::map<size_t,std::vector<size_t>>& faceMap, const Eigen::Matrix<double,dim,dim>& eT, const double& vrc,const int&type);
+        size_t insertInclusion(const std::map<size_t,Eigen::Vector3d>& nodes,const std::map<size_t,std::vector<size_t>>& faceMap, const Eigen::Matrix<double,dim,dim>& eT, const double& vrc,const int&type);
         void writeConfigFiles(const size_t& fileID);
         
         void insertJunctionLoop(const std::vector<VectorDimD>& loopNodePos,

@@ -289,19 +289,24 @@ class DDInterface
          const std::vector<double>& prismaticLoopRadii,
          const pybind11::array_t<double,
                   pybind11::array::c_style | pybind11::array::forcecast>&
-                  prismaticLoopCenters
+                  prismaticLoopCenters,
+         const std::vector<double>& prismaticLoopSteps
          );
       void specifyPrismaticLoopDensity(
                const std::string& tag,
                const double& prismaticLoopTargetDensityIn,
                const double& prismaticLoopRadiusDistributionMeanIn,
-               const double& prismaticLoopRadiusDistributionStdIn
+               const double& prismaticLoopRadiusDistributionStdIn,
+               const double& prismaticLoopStepDistributionMeanIn,
+               const double& prismaticLoopStepDistributionStdIn
          );
       void specifyPrismaticLoopDensitiesPerSlipSystem(
                const std::string& tag,
                const std::map<int, double>& prismaticLoopDensitiesPerSlipSystemIn,
                const double& prismaticLoopRadiusDistributionMeanIn,
-               const double& prismaticLoopRadiusDistributionStdIn
+               const double& prismaticLoopRadiusDistributionStdIn,
+               const double& prismaticLoopStepsDistributionMeanIn,
+               const double& prismaticLoopStepsDistributionStdIn
          );
       void specifyDipoleDensity(
                const std::string& tag,

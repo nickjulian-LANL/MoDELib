@@ -1670,6 +1670,7 @@ void ddpy::DDInterface::specifyLoops(
    Eigen::Matrix<double, Eigen::Dynamic,3> prismaticLoopCenters;
    std::map<int, double> prismaticLoopTargetDensitiesPerSlipSystem;
    std::vector<double> prismaticLoopRadii;
+   std::vector<double> prismaticLoopSteps;
    std::vector<int> prismaticLoopSlipSystemIDs;
 
    microstructureSpecifications.emplace_back(
@@ -1698,9 +1699,12 @@ void ddpy::DDInterface::specifyLoops(
                prismaticLoopSlipSystemIDs,
                prismaticLoopCenters,
                prismaticLoopRadii,
+               prismaticLoopSteps,
                prismaticLoopTargetDensitiesPerSlipSystem,
                1.0, // prismaticLoopRadiiMean
-               1.0 // prismaticLoopRadiiStd
+               1.0, // prismaticLoopRadiiStd
+               1.0, // prismaticLoopStepMean
+               1.0 // prismaticLoopStepStd
          ));
    for ( const auto& spec : microstructureSpecifications) // debug
       std::cout << "instantiating a MicrostructureGeneratorInMem with spec: " << spec->microstructureType << " " << spec->style << std::endl; // debug
@@ -1735,6 +1739,7 @@ void ddpy::DDInterface::specifyLoopDensitiesPerSlipSystem(
    std::map<int, double> prismaticLoopTargetDensitiesPerSlipSystem;
    Eigen::Matrix<double, Eigen::Dynamic,3> prismaticLoopCenters;
    std::vector<double> prismaticLoopRadii;
+   std::vector<double> prismaticLoopSteps;
    std::vector<int> prismaticLoopSlipSystemIDs;
 
    microstructureSpecifications.emplace_back(
@@ -1763,9 +1768,12 @@ void ddpy::DDInterface::specifyLoopDensitiesPerSlipSystem(
                prismaticLoopSlipSystemIDs,
                prismaticLoopCenters,
                prismaticLoopRadii,
+               prismaticLoopSteps,
                prismaticLoopTargetDensitiesPerSlipSystem,
                1.0, // prismaticLoopRadiiMean
-               1.0 // prismaticLoopRadiiStd
+               1.0, // prismaticLoopRadiiStd
+               1.0, // prismaticLoopStepMean
+               1.0 // prismaticLoopStepStd
          ));
    for ( const auto& spec : microstructureSpecifications) // debug
       std::cout << "instantiating a MicrostructureGeneratorInMem with spec: " << spec->microstructureType << " " << spec->style << std::endl; // debug
@@ -1803,6 +1811,7 @@ void ddpy::DDInterface::specifyLoopDensity(
    Eigen::Matrix<double, Eigen::Dynamic, 3> periodicLoopCenters;
    Eigen::Matrix<double, Eigen::Dynamic,3> prismaticLoopCenters;
    std::vector<double> prismaticLoopRadii;
+   std::vector<double> prismaticLoopSteps;
    std::vector<int> prismaticLoopSlipSystemIDs;
 
    microstructureSpecifications.emplace_back(
@@ -1831,9 +1840,12 @@ void ddpy::DDInterface::specifyLoopDensity(
                prismaticLoopSlipSystemIDs,
                prismaticLoopCenters,
                prismaticLoopRadii,
+               prismaticLoopSteps,
                prismaticLoopTargetDensitiesPerSlipSystem,
                1.0, // prismaticLoopRadiiMean
-               1.0 // prismaticLoopRadiiStd
+               1.0, // prismaticLoopRadiiStd
+               1.0, // prismaticLoopStepMean
+               1.0 // prismaticLoopStepStd
          ));
    for ( const auto& spec : microstructureSpecifications) // debug
       std::cout << "instantiating a MicrostructureGeneratorInMem with spec: " << spec->microstructureType << " " << spec->style << std::endl; // debug
@@ -1847,7 +1859,8 @@ void ddpy::DDInterface::specifyPrismaticLoops(
          const std::vector<double>& prismaticLoopRadiiIn,
          const pybind11::array_t<double,
                   pybind11::array::c_style | pybind11::array::forcecast>&
-                  prismaticLoopCentersIn
+                  prismaticLoopCentersIn,
+         const std::vector<double>& prismaticLoopStepsIn
       )
 {
    if ( ddBase == nullptr) readddBase();
@@ -1907,9 +1920,12 @@ void ddpy::DDInterface::specifyPrismaticLoops(
                prismaticLoopSlipSystemIDs,
                prismaticLoopCenters,
                prismaticLoopRadiiIn,
+               prismaticLoopStepsIn,
                prismaticLoopTargetDensitiesPerSlipSystem,
                1.0, // prismaticLoopRadiiMean
-               1.0 // prismaticLoopRadiiStd
+               1.0, // prismaticLoopRadiiStd
+               1.0, // prismaticLoopStepMean
+               1.0 // prismaticLoopStepStd
          ));
    for ( const auto& spec : microstructureSpecifications) // debug
       std::cout << "instantiating a MicrostructureGeneratorInMem with spec: " << spec->microstructureType << " " << spec->style << std::endl; // debug
@@ -1921,7 +1937,9 @@ void ddpy::DDInterface::specifyPrismaticLoopDensitiesPerSlipSystem(
          const std::string& tag,
          const std::map<int, double>& prismaticLoopTargetDensitiesPerSlipSystemIn,
          const double& prismaticLoopRadiiMeanIn,
-         const double& prismaticLoopRadiiStdIn
+         const double& prismaticLoopRadiiStdIn,
+         const double& prismaticLoopStepMeanIn,
+         const double& prismaticLoopStepStdIn
       )
 {
    if ( ddBase == nullptr) readddBase();
@@ -1943,6 +1961,7 @@ void ddpy::DDInterface::specifyPrismaticLoopDensitiesPerSlipSystem(
    Eigen::Matrix<double, Eigen::Dynamic, 3> periodicLoopCenters;
    Eigen::Matrix<double, Eigen::Dynamic, 3> prismaticLoopCenters;
    std::vector<double> prismaticLoopRadii;
+   std::vector<double> prismaticLoopSteps;
    std::vector<int> prismaticLoopSlipSystemIDs;
 
    microstructureSpecifications.emplace_back(
@@ -1971,9 +1990,12 @@ void ddpy::DDInterface::specifyPrismaticLoopDensitiesPerSlipSystem(
                prismaticLoopSlipSystemIDs,
                prismaticLoopCenters,
                prismaticLoopRadii,
+               prismaticLoopSteps,
                prismaticLoopTargetDensitiesPerSlipSystemIn,
                prismaticLoopRadiiMeanIn,
-               prismaticLoopRadiiStdIn
+               prismaticLoopRadiiStdIn,
+               prismaticLoopStepMeanIn,
+               prismaticLoopStepStdIn
          ));
    for ( const auto& spec : microstructureSpecifications) // debug
       std::cout << "instantiating a MicrostructureGeneratorInMem with spec: " << spec->microstructureType << " " << spec->style << std::endl; // debug
@@ -1986,7 +2008,9 @@ void ddpy::DDInterface::specifyPrismaticLoopDensity(
          const std::string& tag,
          const double& prismaticLoopTargetDensityIn,
          const double& prismaticLoopRadiiMeanIn,
-         const double& prismaticLoopRadiiStd
+         const double& prismaticLoopRadiiStd,
+         const double& prismaticLoopStepMeanIn,
+         const double& prismaticLoopStepStd
       )
 {
    if ( ddBase == nullptr) readddBase();
@@ -2010,6 +2034,7 @@ void ddpy::DDInterface::specifyPrismaticLoopDensity(
    Eigen::Matrix<double, Eigen::Dynamic, 3> periodicLoopCenters;
    Eigen::Matrix<double, Eigen::Dynamic,3> prismaticLoopCenters;
    std::vector<double> prismaticLoopRadii;
+   std::vector<double> prismaticLoopSteps;
    std::vector<int> prismaticLoopSlipSystemIDs;
 
    microstructureSpecifications.emplace_back(
@@ -2038,9 +2063,12 @@ void ddpy::DDInterface::specifyPrismaticLoopDensity(
                prismaticLoopSlipSystemIDs,
                prismaticLoopCenters,
                prismaticLoopRadii,
+               prismaticLoopSteps,
                prismaticLoopTargetDensitiesPerSlipSystem,
                prismaticLoopRadiiMeanIn,
-               prismaticLoopRadiiStd
+               prismaticLoopRadiiStd,
+               prismaticLoopStepMeanIn,
+               prismaticLoopStepStd
          ));
    for ( const auto& spec : microstructureSpecifications) // debug
       std::cout << "instantiating a MicrostructureGeneratorInMem with spec: " << spec->microstructureType << " " << spec->style << std::endl; // debug
@@ -2071,6 +2099,7 @@ void ddpy::DDInterface::specifyDipoleDensity(
    std::map<int, double> prismaticLoopTargetDensitiesPerSlipSystem;
    Eigen::Matrix<double, Eigen::Dynamic,3> prismaticLoopCenters;
    std::vector<double> prismaticLoopRadii;
+   std::vector<double> prismaticLoopSteps;
    std::vector<int> prismaticLoopSlipSystemIDs;
 
    microstructureSpecifications.emplace_back(
@@ -2103,9 +2132,12 @@ void ddpy::DDInterface::specifyDipoleDensity(
                prismaticLoopSlipSystemIDs,
                prismaticLoopCenters,
                prismaticLoopRadii,
+               prismaticLoopSteps,
                prismaticLoopTargetDensitiesPerSlipSystem,
                1.0, //prismaticLoopRadiiMean // not used
-               1.0 //prismaticLoopRadiiStd // not used
+               1.0, //prismaticLoopRadiiStd // not used
+               1.0, //prismaticLoopStepMean // not used
+               1.0 //prismaticLoopStepStd // not used
                )
             )
          );
@@ -2164,6 +2196,7 @@ void ddpy::DDInterface::specifyDipoles(
    std::map<int, double> prismaticLoopTargetDensitiesPerSlipSystem;
    Eigen::Matrix<double, Eigen::Dynamic,3> prismaticLoopCenters;
    std::vector<double> prismaticLoopRadii;
+   std::vector<double> prismaticLoopSteps;
    std::vector<int> prismaticLoopSlipSystemIDs;
 
    microstructureSpecifications.emplace_back(
@@ -2196,9 +2229,12 @@ void ddpy::DDInterface::specifyDipoles(
                prismaticLoopSlipSystemIDs,
                prismaticLoopCenters,
                prismaticLoopRadii,
+               prismaticLoopSteps,
                prismaticLoopTargetDensitiesPerSlipSystem,
                1.0, //prismaticLoopRadiiMean // not used
-               1.0 // prismaticLoopRadiiStd
+               1.0, // prismaticLoopRadiiStd
+               1.0, //prismaticLoopStepMean // not used
+               1.0 // prismaticLoopStepStd
                )
             )
          );
@@ -2434,6 +2470,17 @@ void ddpy::DDInterface::regeneratePolycrystalFile(
    outputFile << "stackingFaultNoiseMode=" << stackingFaultNoiseMode
       << ";" << std::endl;
    outputFile << std::endl;
+
+   if (! lattice.compare("bcc")) // .compare() returns 0 if they're equal
+      outputFile << "dislocationMobilityType='BCC';" << std::endl;
+   else if (! lattice.compare("fcc")) // .compare() returns 0 if they're equal
+      outputFile << "dislocationMobilityType='FCC';" << std::endl;
+   else
+   {
+      std::cout << "error: lattice type not recognized while trying to "
+         << "write polycrystal.txt" << std::endl;
+      return;
+   }
    //outputFile << "solidSolutionNoiseFile_xz=" << ";" << std::endl;
    //outputFile << "solidSolutionNoiseFile_yz=" << ";" << std::endl;
 
@@ -2726,7 +2773,8 @@ PYBIND11_MODULE( ddpy, m) {
             py::arg( "tag").none(false),
             py::arg( "slipSystemIDs").none(false),
             py::arg( "prismaticLoopRadii").none(false),
-            py::arg( "prismaticLoopCenters").none(false)
+            py::arg( "prismaticLoopCenters").none(false),
+            py::arg( "prismaticLoopSteps").none(false)
           )
       .def("specifyPrismaticLoopDensity", // TODO: implememnt
             &ddpy::DDInterface::specifyPrismaticLoopDensity,
@@ -2734,7 +2782,9 @@ PYBIND11_MODULE( ddpy, m) {
             py::arg( "tag").none(false),
             py::arg( "prismaticLoopDensity").none(false),
             py::arg( "prismaticLoopRadiusMean").none(false),
-            py::arg( "prismaticLoopRadiusStd").none(false)
+            py::arg( "prismaticLoopRadiusStd").none(false),
+            py::arg( "prismaticLoopStepMean").none(false),
+            py::arg( "prismaticLoopStepStd").none(false)
           )
       .def("specifyPrismaticLoopDensitiesPerSlipSystem", // TODO: implememnt
             &ddpy::DDInterface::specifyPrismaticLoopDensitiesPerSlipSystem,
@@ -2742,7 +2792,9 @@ PYBIND11_MODULE( ddpy, m) {
             py::arg( "tag").none(false),
             py::arg( "prismaticLoopDensitiesPerSlipSystem").none(false),
             py::arg( "prismaticLoopRadiusMean").none(false), // keep
-            py::arg( "prismaticLoopRadiusStd").none(false) // keep
+            py::arg( "prismaticLoopRadiusStd").none(false), // keep
+            py::arg( "prismaticLoopStepMean").none(false), // keep
+            py::arg( "prismaticLoopStepStd").none(false) // keep
           )
       .def("specifyDipoleDensity",
             &ddpy::DDInterface::specifyDipoleDensity,

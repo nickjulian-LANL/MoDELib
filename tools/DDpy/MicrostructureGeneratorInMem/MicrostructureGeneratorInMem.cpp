@@ -27,24 +27,23 @@ namespace model
 
     /**********************************************************************/
     MicrostructureGeneratorInMem::MicrostructureGeneratorInMem(
-         const DislocationDynamicsBase<3>::DislocationDynamicsBaseType& ddBase,
+         DislocationDynamicsBase<3>::DislocationDynamicsBaseType& ddBaseIn,
          const std::list<std::shared_ptr<MicrostructureSpecification>> microstructureSpecifications) :
-    /* init*/ traitsIO( ddBase.simulationParameters.traitsIO) // moved to DislocationDynamicsBase::simulationParameters.traitsIO
-    /* init */,configIO( traitsIO.evlFolder)
-    /* init */,auxIO( traitsIO.auxFolder)
-    /* init */,outputBinary(TextFileParser( traitsIO.ddFile).readScalar<int>("outputBinary",true)) // TODO: remove // outputBinary might not exist yet
+    ///* init*/ traitsIO( ddBase.simulationParameters.traitsIO) // moved to DislocationDynamicsBase::simulationParameters.traitsIO
+    /* init */ configIO( ddBaseIn.simulationParameters.traitsIO.evlFolder)
+    /* init */,auxIO( ddBaseIn.simulationParameters.traitsIO.auxFolder)
+    /* init */,ddBase( ddBaseIn)
+    /* init */,outputBinary(TextFileParser( ddBase.simulationParameters.traitsIO.ddFile).readScalar<int>("outputBinary",true)) // TODO: remove // outputBinary might not exist yet
     //,outputBinary( false)
     ///* init */,periodicFaceIDs(TextFileParser( ddBase.simulationParameters.traitsIO.polyFile).template readSet<int>("periodicFaceIDs",true)) // TODO: remove
-    /* init */,periodicFaceIDs( ddBase.periodicFaceIDs)
-    /* init */,mesh( ddBase.mesh)
-    /* init*/,minSize(0.1*std::min(mesh.xMax(0)-mesh.xMin(0),std::min(mesh.xMax(1)-mesh.xMin(1),mesh.xMax(2)-mesh.xMin(2))))
-    /* init*/,maxSize(std::max(mesh.xMax(0)-mesh.xMin(0),std::max(mesh.xMax(1)-mesh.xMin(1),mesh.xMax(2)-mesh.xMin(2))))
-    /* init*/,poly( ddBase.poly)
-    /* init*/,glidePlaneFactory(poly)
-    /* init*/,periodicGlidePlaneFactory(poly, glidePlaneFactory)
+    /* init*/,minSize(0.1*std::min(ddBase.mesh.xMax(0)-ddBase.mesh.xMin(0),std::min(ddBase.mesh.xMax(1)-ddBase.mesh.xMin(1),ddBase.mesh.xMax(2)-ddBase.mesh.xMin(2))))
+    /* init*/,maxSize(std::max(ddBase.mesh.xMax(0)-ddBase.mesh.xMin(0),std::max(ddBase.mesh.xMax(1)-ddBase.mesh.xMin(1),ddBase.mesh.xMax(2)-ddBase.mesh.xMin(2))))
+    ///* init*/,poly( ddBase.poly)
+    ///* init*/,glidePlaneFactory(poly)
+    ///* init*/,periodicGlidePlaneFactory(poly, glidePlaneFactory)
     {
         
-        std::cout<<greenBoldColor<<"Generating microstructure for "<< traitsIO.simulationFolder <<defaultColor<<std::endl;
+        std::cout<<greenBoldColor<<"Generating microstructure for "<< ddBase.simulationParameters.traitsIO.simulationFolder <<defaultColor<<std::endl;
         
     /* debug **************************************************************/
         std::cout << "microstructureSpecifications types:" << std::endl; // debug
@@ -53,9 +52,9 @@ namespace model
     /* debug **************************************************************/
         
         // Some sanity checks
-        if(mesh.volume()<FLT_EPSILON)
+        if(ddBase.mesh.volume()<FLT_EPSILON)
         {
-            throw std::runtime_error("mesh "+traitsIO.meshFile+" is empty.");
+            throw std::runtime_error("mesh "+ddBase.simulationParameters.traitsIO.meshFile+" is empty.");
         }
         
         for(const auto& spec : microstructureSpecifications)
@@ -149,6 +148,12 @@ namespace model
         
     }
 
+    const DDtraitsIO& MicrostructureGeneratorInMem::traits() const
+    {
+        return ddBase.simulationParameters.traitsIO;
+    }
+
+
     const DDconfigIO<3>& MicrostructureGeneratorInMem::config() const
     {
         return configIO;
@@ -237,27 +242,32 @@ namespace model
         return inclusionID;
     }
 
-size_t MicrostructureGeneratorInMem::insertInclusion(const std::vector<VectorDimD>& polyNodes,const std::map<size_t,std::vector<size_t>>& faceMap, const Eigen::Matrix<double,dim,dim>& eT, const double& vrc,const int&type)
+size_t MicrostructureGeneratorInMem::insertInclusion(const std::map<size_t,Eigen::Vector3d>& polyNodes,const std::map<size_t,std::vector<size_t>>& faceMap, const Eigen::Matrix<double,dim,dim>& eT, const double& vrc,const int&type)
 {
     const size_t inclusionID(configIO.sphericalInclusions().size()+configIO.polyhedronInclusions().size());
     configIO.polyhedronInclusions().emplace_back(inclusionID,eT,vrc,type);
     const size_t startNodeID(configIO.polyhedronInclusionNodes().size());
-//    const size_t startNodeID(0);
-    for(size_t k=0;k<polyNodes.size();++k)
+    size_t nodeCounter(0);
+    for(const auto& node : polyNodes)
     {
-//        configIO.polyhedronInclusionNodes().emplace_back(inclusionID,startNodeID+k,polyNodes[k]);
-        configIO.polyhedronInclusionNodes().emplace_back(startNodeID+k,polyNodes[k]);
-
+        configIO.polyhedronInclusionNodes().emplace_back(startNodeID+nodeCounter,node.second);
+        nodeCounter++;
     }
+
     for(const auto& pair : faceMap)
     {
         const size_t& faceID(pair.first);
         for(size_t k=0;k<pair.second.size();++k)
         {
             const size_t k1(k<pair.second.size()-1? k+1 : 0);
-            const size_t sourceID(startNodeID + pair.second[k]);
-            const size_t   sinkID(startNodeID + pair.second[k1]);
-            configIO.polyhedronInclusionEdges().emplace_back(inclusionID,faceID,sourceID,sinkID);
+            const auto sourceIter(polyNodes.find(pair.second[k]));
+            const auto sinkIter(polyNodes.find(pair.second[k1]));
+            if(sourceIter!=polyNodes.end() && sinkIter!=polyNodes.end())
+            {                
+                const size_t sourceID(startNodeID +std::distance(polyNodes.begin(),sourceIter));
+                const size_t sinkID(startNodeID +std::distance(polyNodes.begin(),sinkIter));
+                configIO.polyhedronInclusionEdges().emplace_back(inclusionID,faceID,sourceID,sinkID);
+            }
         }
     }
     
@@ -266,7 +276,7 @@ size_t MicrostructureGeneratorInMem::insertInclusion(const std::vector<VectorDim
 
 
 
-    ///**********************************************************************/
+    /**********************************************************************/
     void MicrostructureGeneratorInMem::writeConfigFiles(const size_t& fileID)
     {
         
@@ -301,7 +311,7 @@ bool MicrostructureGeneratorInMem::allPointsInGrain(const std::vector<VectorDimD
     bool temp=true;
     for(const auto& point : points)
     {
-        temp *= mesh.searchRegion(grainID,point).first;
+        temp *= ddBase.mesh.searchRegion(grainID,point).first;
         if(!temp)
         {
             break;

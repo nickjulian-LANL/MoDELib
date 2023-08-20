@@ -39,15 +39,18 @@ namespace model
             const std::vector<int>& prismaticLoopSlipSystemIDsIn,
             const Eigen::Matrix<double, Eigen::Dynamic,3>& prismaticLoopCentersIn, // # each row in the matrix is a the center of the loop
             const std::vector<double>& prismaticLoopRadiiIn,
+            const std::vector<double>& prismaticLoopStepsIn,
             const std::map<int, double>& prismaticLoopTargetDensitiesPerSlipSystemIn,
             const double& prismaticLoopRadiiMeanIn,
-            const double& prismaticLoopRadiiStdIn
+            const double& prismaticLoopRadiiStdIn,
+            const double& prismaticLoopStepMeanIn,
+            const double& prismaticLoopStepStdIn
             ) :
          microstructureType( microstructureTypeIn)
          ,style( styleIn)
          ,tag( tagIn)
          ,ddBase( ddBaseIn)
-         ,periodicFaceIDs( ddBase.periodicFaceIDs)
+         ,periodicFaceIDs( ddBase.simulationParameters.periodicFaceIDs)
          ,periodicDipoleSlipSystemIDs( periodicDipoleSlipSystemIDsIn)
          ,periodicDipoleExitFaceIDs( periodicDipoleExitFaceIDsIn)
          ,periodicDipolePoints( periodicDipolePointsIn)
@@ -68,9 +71,12 @@ namespace model
          ,prismaticLoopSlipSystemIDs( prismaticLoopSlipSystemIDsIn)
          ,prismaticLoopCenters( prismaticLoopCentersIn)
          ,prismaticLoopRadii( prismaticLoopRadiiIn)
+         ,prismaticLoopSteps( prismaticLoopStepsIn)
          ,prismaticLoopTargetDensitiesPerSlipSystem( prismaticLoopTargetDensitiesPerSlipSystemIn)
          ,prismaticLoopRadiusDistributionMean( prismaticLoopRadiiMeanIn)
          ,prismaticLoopRadiusDistributionStd( prismaticLoopRadiiStdIn)
+         ,prismaticLoopStepDistributionMean( prismaticLoopStepMeanIn)
+         ,prismaticLoopStepDistributionStd( prismaticLoopStepStdIn)
       {}
    //PeriodicDipoleIndividualSpecification::PeriodicDipoleIndividualSpecification(
    //   const DislocationDynamicsBase<3>::DislocationDynamicsBaseType& ddBaseIn,

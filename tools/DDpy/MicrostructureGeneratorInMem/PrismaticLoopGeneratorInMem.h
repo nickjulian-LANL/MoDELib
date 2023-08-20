@@ -52,7 +52,8 @@ namespace model
               MicrostructureGeneratorInMem& mg,
               const int& rSS,
               const VectorDimD& center,
-              const double& radius
+              const double& radius,
+              const double& step
               );
       void generateIndividual( MicrostructureGeneratorInMem& mg) override;
       void generateDensity( MicrostructureGeneratorInMem& mg) override;
