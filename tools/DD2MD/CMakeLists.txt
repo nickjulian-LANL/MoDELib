@@ -1,29 +1,26 @@
-# on Windows use: cd build; cmake -G "NMake Makefiles" ..
 cmake_minimum_required(VERSION 3.1.0)
-project(microstructureGenerator VERSION 1.0.0 LANGUAGES CXX)
 
-find_package(Eigen3 REQUIRED NAMES Eigen3)
-list(APPEND MG_LINK_LIBRARIES_LIST Eigen3::Eigen)
-include_directories(Eigen3::Eigen)
+project(DD2MD VERSION 1.0.0 LANGUAGES CXX)
+
+find_package(pybind11 CONFIG REQUIRED)
+
+set(EigenRootDir "/usr/local/include")
 set(MoDELibRootDir "${CMAKE_CURRENT_SOURCE_DIR}/../..")
 
 set(CMAKE_BUILD_TYPE Release)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-#message("CMAKE_SYSTEM_NAME IS: ${CMAKE_SYSTEM_NAME}")
-#if(${CMAKE_SYSTEM_NAME} MATCHES Darwin)
-#	set(CMAKE_CXX_COMPILER "/opt/local/bin/g++")
-#	set(CMAKE_CXX_FLAGS "-Wall -Wextra -O3 -Ofast")
-#elseif(${CMAKE_SYSTEM_NAME} MATCHES Linux)
-#	set(CMAKE_CXX_FLAGS "-Wall -Wextra -march=native -O3 -Ofast")
-#endif()
+set(CMAKE_CXX_COMPILER "/opt/local/bin/g++-mp-11")
 set(CMAKE_CXX_FLAGS "-Wall -Wextra -march=native -Ofast")
 
-#set(CMAKE_EXPORT_COMPILE_COMMANDS ON) # creates compile_commands.json
-#set(CMAKE_VERBOSE_MAKEFILE TRUE)
+#add_library(DD2MD SHARED dd2md.cpp)
+#pybind11_add_module(DD2MD ${MoDELibRootDir}/src/DD2MD/DD2MD.cpp)
 
-add_executable(microstructureGenerator microstructureGenerator.cpp)
+pybind11_add_module(DD2MD SHARED dd2md.cpp)
 
+
+
+include_directories(${EigenRootDir})
 include_directories(${MoDELibRootDir}/include/Utilities/)
 include_directories(${MoDELibRootDir}/include/IO/)
 include_directories(${MoDELibRootDir}/include/Math/)
@@ -38,6 +35,7 @@ include_directories(${MoDELibRootDir}/include/DislocationDynamicsIO/)
 include_directories(${MoDELibRootDir}/include/DislocationMobilities/)
 include_directories(${MoDELibRootDir}/include/DislocationDynamicsBase/)
 include_directories(${MoDELibRootDir}/include/DislocationMicrostructure/)
+include_directories(${MoDELibRootDir}/include/DD2MD/)
 
 add_subdirectory(${MoDELibRootDir}/src/Geometry Geometry)
 add_subdirectory(${MoDELibRootDir}/src/Lattices Lattices)
@@ -45,7 +43,10 @@ add_subdirectory(${MoDELibRootDir}/src/Mesh Mesh)
 add_subdirectory(${MoDELibRootDir}/src/GlidePlanes GlidePlanes)
 add_subdirectory(${MoDELibRootDir}/src/DislocationMobilities DDDmobilities)
 add_subdirectory(${MoDELibRootDir}/src/DislocationDynamicsIO DDDIO)
-add_subdirectory(${MoDELibRootDir}/src/DislocationDynamicsBase DDDBase)
+add_subdirectory(${MoDELibRootDir}/src/DislocationDynamicsBase DDDbase)
 add_subdirectory(${MoDELibRootDir}/src/PolycrystallineMaterials PolyMaterials)
 add_subdirectory(${MoDELibRootDir}/src/DislocationMicrostructure Microstructure)
-target_link_libraries(${PROJECT_NAME} ${MG_LINK_LIBRARIES_LIST})
+add_subdirectory(${MoDELibRootDir}/src/DD2MD DD2MD)
+
+
+target_link_libraries(DD2MD PUBLIC pybind11::module)
